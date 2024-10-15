@@ -150,7 +150,7 @@ IF (PRESENT(SCALARS)) THEN
 
   IPROMA = SIZE(SCALARL(1)%V,1)
   IGPBLKS = SIZE(SCALARL(1)%V,2)
-  IFLDG = SIZE(SCALARS) ! Number of output scalar fields in grid space
+  IFLDG = SIZE(SCALARL) ! Number of output scalar fields in grid space
 
   ISPEC2 = SIZE(SPSCALARL(1)%V,1)
   IFLDS = SIZE(SPSCALARL)  ! Number of input scalar fields in spectral space
