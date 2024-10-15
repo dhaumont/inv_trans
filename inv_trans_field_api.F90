@@ -4,6 +4,28 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 IMPLICIT NONE
 
+ABSTRACT INTERFACE
+
+SUBROUTINE FSPGL_INTF (KM,KSL,KDGL,KFIELDS,PR1MU2,PFIELD,&
+                     & KPTRU,KFLDUV,KFLDSC,KFLDPTRUV)
+
+PARAMETER (JPIM = 4, JPRB = 4)
+
+INTEGER(KIND=JPIM),INTENT(IN)           :: KM
+INTEGER(KIND=JPIM),INTENT(IN)           :: KSL
+INTEGER(KIND=JPIM),INTENT(IN)           :: KDGL
+REAL(KIND=JPRB)   ,INTENT(IN)           :: PR1MU2(KDGL)
+INTEGER(KIND=JPIM),INTENT(IN)           :: KFIELDS
+REAL(KIND=JPRB)   ,INTENT(INOUT),TARGET :: PFIELD(2*KFIELDS,0:KDGL+1)
+INTEGER(KIND=JPIM),INTENT(IN)           :: KPTRU
+INTEGER(KIND=JPIM),INTENT(IN)           :: KFLDUV
+INTEGER(KIND=JPIM),INTENT(IN)           :: KFLDSC
+INTEGER(KIND=JPIM),INTENT(IN)           :: KFLDPTRUV(KFLDUV)
+
+END SUBROUTINE FSPGL_INTF
+
+END INTERFACE
+
 CONTAINS
 
 ! Spectral to grid space transformation
@@ -11,7 +33,9 @@ SUBROUTINE INV_TRANS_FIELD_API(SPVORS,SPDIVS,SPSCALARS, &
                              & US, VS, VORS,DIVS,SCALARS, &
                              & DUS, DVS, DSCALARS, DSCALARS_NS, &
                              & VSETUVS, VSETS, &
-                             & LDACC) 
+                             & LDACC, &
+			                       & FSPGL_PROC)
+			                      
 
 TYPE(FIELD_BASIC_PTR),OPTIONAL  :: SPVORS(:), SPDIVS(:)        !Spectral vector fields : vorticity and divergence fields (in)
 TYPE(FIELD_BASIC_PTR),OPTIONAL  :: SPSCALARS(:)                !Spectral scalar fields (in)
@@ -27,6 +51,8 @@ INTEGER(KIND=JPIM),OPTIONAL     :: VSETUVS(:)                   !Meta data vecto
 INTEGER(KIND=JPIM),OPTIONAL     :: VSETS(:)                     !Meta data scalar fields
 
 LOGICAL, OPTIONAL :: LDACC
+PROCEDURE (FSPGL_INTF), OPTIONAL :: FSPGL_PROC
+
 ! Local variables
 
 ! Temporary arrays
@@ -102,6 +128,7 @@ IF (PRESENT(US)) THEN
   IGPBLKS = SIZE(UL(1)%V,2)
   
   IFLDGUV = SIZE(UL)         ! Number of vector fields
+
   ISPEC2 = SIZE(SPVORL(1)%V,1) ! Size of spectral fields
   IFLDSUV = SIZE(SPVORL)       ! Number of input spectral vector fields
     
@@ -172,10 +199,15 @@ ENDIF
 
 ! 3. CALL INV_TRANS
 
-CALL INV_TRANS(PSPVOR = ZSPVOR,PSPDIV = ZSPDIV,PGPUV = ZGPUV,KVSETUV = VSETUVS, &
-             & PSPSC2 = ZSPSCALAR,PGP2 = ZGP,KVSETSC2 = VSETS, &
-             & KPROMA = IPROMA, NGPBLKS = IGPBLKS) 
-
+IF (PRESENT (FSPGL_PROC)) THEN
+	CALL INV_TRANS(PSPVOR = ZSPVOR,PSPDIV = ZSPDIV,PGPUV = ZGPUV,KVSETUV = VSETUVS, &
+	             & PSPSC2 = ZSPSCALAR,PGP2 = ZGP,KVSETSC2 = VSETS, &
+	             & KPROMA = IPROMA,FSPGL_PROC=FSPGL_PROC, NGPBLKS = IGPBLKS) 
+ELSE
+	CALL INV_TRANS(PSPVOR = ZSPVOR,PSPDIV = ZSPDIV,PGPUV = ZGPUV,KVSETUV = VSETUVS, &
+	             & PSPSC2 = ZSPSCALAR,PGP2 = ZGP,KVSETSC2 = VSETS, &
+	             & KPROMA = IPROMA, NGPBLKS = IGPBLKS) 
+ENDIF
 ! 4. Copy back data to fields
 
 ! Copy vector fields back from temporary vector arrays
