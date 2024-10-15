@@ -113,12 +113,12 @@ IF (PRESENT(US)) THEN
   UL = LG (US)
   VL = LG (VS)
 
-  IF ((SIZE (UL) /= SIZE (VL)) .OR. (SIZE (VORL) /= SIZE (DIVL)) .OR. (SIZE (UL) /= SIZE (VSETUVS))) THEN
+  IF ((SIZE (UL) /= SIZE (VL)) .OR. (SIZE (SPVORL) /= SIZE (SPDIVL)) .OR. (SIZE (UL) /= SIZE (VSETUVS))) THEN
     PRINT*,"INVALID SIZES:"
     PRINT *, " UL = ", SIZE (UL)
     PRINT *, " VL = ", SIZE (VL)
-    PRINT *, " VORL = ", SIZE (VORL)
-    PRINT *, " DIVL = ", SIZE (DIVL)
+    PRINT *, " SPVORL = ", SIZE (SPVORL)
+    PRINT *, " SPDIVL = ", SIZE (SPDIVL)
     PRINT *, " VSETUVS = ", SIZE (VSETUVS)
     STOP 1
   ENDIF
