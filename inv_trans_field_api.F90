@@ -75,18 +75,19 @@ REAL(KIND=JPRB),ALLOCATABLE :: ZGP(:,:,:)                           ! Grid scala
 INTEGER(KIND=JPIM)          :: IFLDSUV                              ! Number of input spectral vector fields
 INTEGER(KIND=JPIM)          :: IFLDS                                ! Number of input spectral scalar fields
 INTEGER(KIND=JPIM)          :: IFLDG                                ! Number of output scalar fields
+INTEGER(KIND=JPIM)          :: KFLDG                                ! Size of output scalar fields array
 INTEGER(KIND=JPIM)          :: IFLDGUV                              ! Number of output vector fields
-INTEGER(KIND=JPIM)          :: KFLDGUV                              ! Number of output vector fields
+INTEGER(KIND=JPIM)          :: KFLDGUV                              ! Size of output vector fields array
 
-INTEGER(KIND=JPIM)          :: OFFSETUV                             
+INTEGER(KIND=JPIM)          :: OFFSET                             
 INTEGER(KIND=JPIM)          :: ISPEC2                               ! Size of spectral fields (truncation)
 INTEGER(KIND=JPIM)          :: IPROMA,IGPBLKS                       ! Size of output grid fields
 
 INTEGER(KIND=JPIM)          :: JFLD                                 ! field counter
-LOGICAL          :: LDSCDERS                             ! indicating if derivatives of scalar variables are req.
-LOGICAL          :: LDVORGP                              ! indicating if grid-point vorticity is req.
-LOGICAL          :: LDDIVGP                              ! indicating if grid-point divergence is req.
-LOGICAL          :: LDUVDER                              ! indicating if E-W derivatives of u and v are req.
+LOGICAL          :: LDSCDERS                                        ! indicating if derivatives of scalar variables are req.
+LOGICAL          :: LDVORGP                                         ! indicating if grid-point vorticity is req.
+LOGICAL          :: LDDIVGP                                         ! indicating if grid-point divergence is req.
+LOGICAL          :: LDUVDER                                         ! indicating if E-W derivatives of u and v are req.
 
 #include "inv_trans.h"
 
@@ -134,24 +135,30 @@ IF (PRESENT(US)) THEN
   ISPEC2 = SIZE(SPVORL(1)%V,1) ! Size of spectral fields
   IFLDSUV = SIZE(SPVORL)       ! Number of input spectral vector fields
   
-  LDVORGP = .FALSE.                              ! indicating if grid-point vorticity is req.
-  LDDIVGP = .FALSE.                              ! indicating if grid-point divergence is req.
-  LDUVDER  = .FALSE.                             ! indicating if E-W derivatives of u and v are req.
+  LDVORGP = .FALSE.                              
+  LDDIVGP = .FALSE.                             
+  LDUVDER  = .FALSE.                            
+  LDSCDERS = .FALSE. 
 
   KFLDGUV = IFLDGUV
+
+
   IF (PRESENT(DUS) .AND. PRESENT(DVS))    THEN
+     PRINT *, "DUS/DVS PRESENT"
      LDUVDER = .TRUE.
      KFLDGUV = KFLDGUV + 2 * IFLDGUV
   ENDIF
   IF (PRESENT(VORS)) THEN
+    PRINT *, "VORS PRESENT"
      LDVORGP = .TRUE.
      KFLDGUV = KFLDGUV + IFLDGUV
   ENDIF
   IF (PRESENT(DIVS)) THEN
+    PRINT *, "DIVS PRESENT"
      LDUVDER = .TRUE.
      KFLDGUV = KFLDGUV + IFLDGUV
   ENDIF
-
+  
   ! Allocate vector field input in spectral space
   ALLOCATE(ZSPVOR(ISPEC2,IFLDSUV))  
   ALLOCATE(ZSPDIV(ISPEC2,IFLDSUV))
@@ -201,12 +208,19 @@ IF (PRESENT(SCALARS)) THEN
 
   ISPEC2 = SIZE(SPSCALARL(1)%V,1)
   IFLDS = SIZE(SPSCALARL)  ! Number of input scalar fields in spectral space
+  
+  KFLDG = IFLDG
+  IF (PRESENT(DSCALARS) .AND. PRESENT(DSCALARS_NS)) THEN
+    PRINT *, "DSCALARS/DSCALARS_NS PRESENT"
+     LDSCDERS = .TRUE.
+     KFLDG = KFLDG + 2 * IFLDG
+  ENDIF
 
   ! Allocate scalar field input in spectral space
   ALLOCATE(ZSPSCALAR(ISPEC2,IFLDS))
   
   ! Allocate scalar field output in grid space
-  ALLOCATE(ZGP(IPROMA,IFLDG,IGPBLKS))
+  ALLOCATE(ZGP(IPROMA,KFLDG,IGPBLKS))
   
  ! Copy scalar spectral fields to temporary arrays (1D copy thanks to FIELD VIEW)
   DO JFLD=1,IFLDS
@@ -216,12 +230,6 @@ ELSE
   IFLDG = 0
   ALLOCATE(ZGP(0,IFLDG,0),ZSPSCALAR(0,0))
 ENDIF
-
-! 3. Derived output management (vorticity, divergence, derivatives)
-
-LDSCDERS = .FALSE.                             ! indicating if derivatives of scalar variables are req.
-
-IF (PRESENT(DSCALARS) .AND. PRESENT(DSCALARS_NS)) LDSCDERS = .TRUE.
 
 ! 3. CALL INV_TRANS
 
@@ -243,34 +251,45 @@ DO JFLD=1,IFLDGUV
 ENDDO
 
 ! copy derivatives, divergences and vorticities back from temporary vector arrays
-OFFSETUV = IFLDGUV
+OFFSET = IFLDGUV
 IF (LDUVDER) THEN
   DO JFLD=1,IFLDGUV
-    DUL(JFLD)%V(:,:) = ZGPUV(:,OFFSETUV+JFLD,1,:)
-    DVL(JFLD)%V(:,:) = ZGPUV(:,OFFSETUV+JFLD,2,:)
+    DUL(JFLD)%V(:,:) = ZGPUV(:,OFFSET+JFLD,1,:)
+    DVL(JFLD)%V(:,:) = ZGPUV(:,OFFSET+JFLD,2,:)
   ENDDO
-  OFFSETUV = OFFSETUV + IFLDGUV
+  OFFSET = OFFSET + IFLDGUV
 ENDIF
   
 IF (LDVORGP) THEN
   DO JFLD=1,IFLDGUV
-    VORL(JFLD)%V(:,:) = ZGPUV(:,OFFSETUV+JFLD,1,:)
+    VORL(JFLD)%V(:,:) = ZGPUV(:,OFFSET+JFLD,1,:)
   ENDDO
-  OFFSETUV = OFFSETUV + IFLDGUV
+  OFFSET = OFFSET + IFLDGUV
 ENDIF
 
 IF (LDDIVGP) THEN
   DO JFLD=1,IFLDGUV
-    DIVL(JFLD)%V(:,:) = ZGPUV(:,OFFSETUV+JFLD,1,:)
+    DIVL(JFLD)%V(:,:) = ZGPUV(:,OFFSET+JFLD,1,:)
   ENDDO
-  OFFSETUV = OFFSETUV + IFLDGUV
+  OFFSET = OFFSET + IFLDGUV
 ENDIF
-
 
 ! Copy scalar fields back from temporary scalar arrays
 DO JFLD=1,IFLDG
   SCALARL(JFLD)%V(:,:) = ZGP(:,JFLD,:)
 ENDDO
+
+OFFSET = IFLDG
+
+IF (LDSCDERS) THEN
+  DO JFLD=1,IFLDG
+    DSCALARL(JFLD)%V(:,:) = ZGP(:,OFFSET+JFLD,:)
+  ENDDO
+  DO JFLD=1,IFLDG
+    DSCALARS_NL(JFLD)%V(:,:) = ZGP(:,OFFSET+JFLD,:)
+  ENDDO
+  OFFSET = OFFSET + IFLDGUV
+ENDIF
 
 END SUBROUTINE INV_TRANS_FIELD_API
 
