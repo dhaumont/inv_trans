@@ -33,7 +33,7 @@ SUBROUTINE INV_TRANS_FIELD_API(SPVORS,SPDIVS,SPSCALARS, &
                              & US, VS, VORS,DIVS,SCALARS, &
                              & DUS, DVS, DSCALARS, DSCALARS_NS, &
                              & VSETUVS, VSETS, &
-                             & LDACC, &
+                             & LDACC, LDVERBOSE, &
 			                       & FSPGL_PROC)
 			                      
 
@@ -51,6 +51,7 @@ INTEGER(KIND=JPIM),OPTIONAL     :: VSETUVS(:)                   !Meta data vecto
 INTEGER(KIND=JPIM),OPTIONAL     :: VSETS(:)                     !Meta data scalar fields
 
 LOGICAL, OPTIONAL :: LDACC
+LOGICAL, OPTIONAL :: LDVERBOSE
 PROCEDURE (FSPGL_INTF), OPTIONAL :: FSPGL_PROC
 
 ! Local variables
@@ -88,9 +89,12 @@ LOGICAL          :: LDSCDERS                                        ! indicating
 LOGICAL          :: LDVORGP                                         ! indicating if grid-point vorticity is req.
 LOGICAL          :: LDDIVGP                                         ! indicating if grid-point divergence is req.
 LOGICAL          :: LDUVDER                                         ! indicating if E-W derivatives of u and v are req.
-
+LOGICAL          :: LLVERBOSE                                       ! indicating if verbose output is req.
 #include "inv_trans.h"
 
+
+LLVERBOSE = .FALSE.
+IF (PRESENT(LDVERBOSE))  LLVERBOSE = LDVERBOSE
 
 ! 1. VECTOR FIELDS TRANSFORMATION
 
@@ -233,6 +237,15 @@ ENDIF
 
 ! 3. CALL INV_TRANS
 
+IF (LLVERBOSE)  THEN
+  CALL PRINT_DEBUG(ZSPVOR, ZSPDIV, ZSPSCALAR, ZGPUV, ZGP, &
+                  & SPVORS,SPDIVS,SPSCALARS, &
+                  & US, VS, VORS,DIVS,SCALARS, &
+                  & DUS, DVS, DSCALARS, DSCALARS_NS, &
+                  & VSETUVS, VSETS, IFLDSUV,IFLDS,IFLDG,IFLDGUV,LDSCDERS,LDVORGP,LDDIVGP, LDUVDER, &
+                  & ISPEC2, IPROMA,IGPBLKS,KFLDG,KFLDGUV)
+ENDIF
+
 IF (PRESENT (FSPGL_PROC)) THEN
 	CALL INV_TRANS(PSPVOR = ZSPVOR,PSPDIV = ZSPDIV,PGPUV = ZGPUV,KVSETUV = VSETUVS, &
 	             & PSPSC2 = ZSPSCALAR,PGP2 = ZGP,KVSETSC2 = VSETS, &
@@ -292,5 +305,95 @@ IF (LDSCDERS) THEN
 ENDIF
 
 END SUBROUTINE INV_TRANS_FIELD_API
+
+SUBROUTINE PRINT_DEBUG(ZSPVOR, ZSPDIV, ZSPSCALAR, ZGPUV, ZGP, SPVORS,SPDIVS,SPSCALARS, &
+                      & US, VS, VORS,DIVS,SCALARS, &
+                      & DUS, DVS, DSCALARS, DSCALARS_NS, &
+                      & VSETUVS, VSETS, IFLDSUV,IFLDS,IFLDG,IFLDGUV,LDSCDERS,LDVORGP,LDDIVGP, LDUVDER, &
+                      & ISPEC2, NPROMA,IGPBLKS,KFLDG,KFLDGUV)
+
+
+REAL(KIND=JPRB),ALLOCATABLE :: ZSPVOR(:,:),ZSPDIV(:,:)              ! Spectral vector fields (in)
+REAL(KIND=JPRB),ALLOCATABLE :: ZSPSCALAR(:,:)                       ! Spectral scalar fields (in)
+REAL(KIND=JPRB),ALLOCATABLE :: ZGPUV(:,:,:,:)                       ! Grid vector fields (out)
+REAL(KIND=JPRB),ALLOCATABLE :: ZGP(:,:,:)                           ! Grid scalar fields (out)
+
+TYPE(FIELD_BASIC_PTR),OPTIONAL  :: SPVORS(:), SPDIVS(:)        !Spectral vector fields : vorticity and divergence fields (in)
+TYPE(FIELD_BASIC_PTR),OPTIONAL  :: SPSCALARS(:)                !Spectral scalar fields (in)
+
+TYPE(FIELD_BASIC_PTR),OPTIONAL  :: US(:),VS(:)                 !Grid vector fields     (out)
+TYPE(FIELD_BASIC_PTR),OPTIONAL  :: VORS(:),DIVS(:)             !Grid vector fields :vorticity and divergence     (out)
+TYPE(FIELD_BASIC_PTR),OPTIONAL  :: SCALARS(:)                  !Grid scalar fields     (out)
+
+TYPE(FIELD_BASIC_PTR),OPTIONAL  :: DUS(:),DVS(:)               !Grid vector fields derivatives EW (out)
+TYPE(FIELD_BASIC_PTR),OPTIONAL  :: DSCALARS(:), DSCALARS_NS(:) !Grid scalar fields derivatives NS(out)
+
+INTEGER(KIND=JPIM),OPTIONAL     :: VSETUVS(:)                   !Meta data vector fields
+INTEGER(KIND=JPIM),OPTIONAL     :: VSETS(:)                     !Meta data scalar fields
+
+
+  INTEGER(KIND=JPIM), INTENT(IN)          :: IFLDSUV                              ! Number of input spectral vector fields
+  INTEGER(KIND=JPIM), INTENT(IN)          :: IFLDS                                ! Number of input spectral scalar fields
+  INTEGER(KIND=JPIM), INTENT(IN)          :: IFLDG                                ! Number of output scalar fields
+  INTEGER(KIND=JPIM), INTENT(IN)          :: KFLDG                                ! Size of output scalar fields array
+  INTEGER(KIND=JPIM), INTENT(IN)          :: IFLDGUV                              ! Number of output vector fields
+  INTEGER(KIND=JPIM), INTENT(IN)          :: KFLDGUV                              ! Size of output vector fields array
+
+  INTEGER(KIND=JPIM), INTENT(IN)          :: ISPEC2                               ! Size of spectral fields (truncation)
+  INTEGER(KIND=JPIM), INTENT(IN)          :: NPROMA,IGPBLKS                       ! Size of NPROMA and number of blocs
+
+  LOGICAL, INTENT(IN)          :: LDSCDERS                                        ! indicating if derivatives of scalar variables are req.
+  LOGICAL, INTENT(IN)          :: LDVORGP                                         ! indicating if grid-point vorticity is req.
+  LOGICAL, INTENT(IN)          :: LDDIVGP                                         ! indicating if grid-point divergence is req.
+  LOGICAL , INTENT(IN)         :: LDUVDER                                         ! indicating if E-W derivatives of u and v are req.
+
+  PRINT *, "NPROMA", NPROMA
+  PRINT *, "NGPBLKS", IGPBLKS
+  PRINT *, "ISPEC2 (Size of spectral fields)", ISPEC2
+  PRINT *, "LDSCDERS (Compute grid-point derivatives of scalar fields)", LDSCDERS
+  PRINT *, "LDUVDER  (Compute grid-point derivatives of vector fields)", LDUVDER
+  PRINT *, "LDVORGP  (Compute grid-point vorticity)    ", LDVORGP
+  PRINT *, "LDDIVGP  (Compute grid-point divergence)   ", LDDIVGP
+
+  PRINT *, ""
+  PRINT *, "Input spectral vector fields  "
+  IF (PRESENT(SPVORS)) CALL PRINT_DEBUG_FIELDS(SPVORS, "SPVORS and SPDIVS (in)", (/"ISPEC2 ", "NLEV   "/))
+  PRINT *, "                                          ========"
+  PRINT *, "=> IFLDSUV:                         ", IFLDSUV
+  PRINT *, "Size of ZSPVOR [SPEC, NFIELDS]", UBOUND(ZSPVOR) - LBOUND(ZSPVOR) + 1
+  PRINT *, "Size of ZSPDIV [SPEC, NFIELDS]", UBOUND(ZSPDIV) - LBOUND(ZSPDIV) + 1
+
+  PRINT *, ""
+  PRINT *, "Input spectral scalar fields"
+  IF (PRESENT(SPSCALARS)) CALL PRINT_DEBUG_FIELDS(SPSCALARS,"SPSCALARS(in)", (/"ISPEC2 ", "NLEV   "/))  
+  PRINT *, "                                          ========"
+  PRINT *, "=> IFLDS:                            ", IFLDS
+  PRINT *, "Size of ZSPSCALAR [SPEC, NFIELDS]", UBOUND(ZSPSCALAR) - LBOUND(ZSPSCALAR) + 1
+
+  PRINT *, ""
+  PRINT *, "#Output grid-point vector fields"
+  IF (PRESENT(US)) CALL PRINT_DEBUG_FIELDS(US,"US  and VS (out)", (/"NPROMA ","NLEV   ", "NGPBLKS"/))
+  IF (PRESENT(VORS)) CALL PRINT_DEBUG_FIELDS(VORS,"VORS (out)")
+  IF (PRESENT(DIVS)) CALL PRINT_DEBUG_FIELDS(DIVS,"DIVS (out)")
+  IF (PRESENT(DUS)) CALL PRINT_DEBUG_FIELDS(DUS, "DUS (out)")
+  IF (PRESENT(DVS)) CALL PRINT_DEBUG_FIELDS(DVS, "DVS (out)")
+  PRINT *, "                                          ========"
+  PRINT *, "=> IFLDGUV                          ", IFLDGUV
+  PRINT *, "Size of PGPUV [NPROMA, NLEV, NFIELDS, NGPBLKS]", UBOUND(ZGPUV) - LBOUND(ZGPUV) + 1
+
+  PRINT *, ""
+  PRINT *, "#Output grid-point scalar fields"
+  IF (PRESENT(SCALARS)) CALL PRINT_DEBUG_FIELDS(SCALARS, "SCALARS (out)", (/"NPROMA ", "NLEV   ", "NGPBLKS"/))
+  IF (PRESENT(DSCALARS)) CALL PRINT_DEBUG_FIELDS(DSCALARS, "DSCALARS (out)")
+  IF (PRESENT(DSCALARS_NS)) CALL PRINT_DEBUG_FIELDS(DSCALARS_NS,"DSCALARS_NS (out)")
+  PRINT *, "                                          ========"
+  PRINT *, "=> IFLDG                            ", IFLDG
+  PRINT *, "Size of PGP [NPROMA, NLEV, NGPBLKS]", UBOUND(ZGP) - LBOUND(ZGP) + 1
+
+  
+
+  
+
+END SUBROUTINE PRINT_DEBUG
 
 END MODULE INV_TRANS_FIELD_API_MODULE
