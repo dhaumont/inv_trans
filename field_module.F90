@@ -326,10 +326,17 @@ MODULE FIELD_MODULE
       N_DIMS = SIZE(DIM_NAMES)
     ENDIF
   
-    IF (N_DIMS == 0 ) THEN
-      PRINT *, FIELD_NAME
-    ELSE
-      PRINT *, FIELD_NAME, "   [", DIM_NAMES(:), "]"
+    IF (N_DIMS == 1 ) THEN
+      WRITE (*, "(A16,8X,A2, A4,A2)") &
+            & FIELD_NAME, "| ", DIM_NAMES(1), " |" 
+    ELSE IF (N_DIMS == 2 ) THEN
+      WRITE (*, "(A16,8X,A2, A4,A3, A4,A2)") &
+              & FIELD_NAME, "| ", DIM_NAMES(1), " | ", DIM_NAMES(2), " |" 
+    ELSE IF (N_DIMS == 3 ) THEN
+      WRITE (*, "(A16,8X,A2, A4,A3, A4,A3,A4, A2)") &
+              & FIELD_NAME, "| ", &
+              & DIM_NAMES(1), " | ", DIM_NAMES(2), " | ",  DIM_NAMES(3), " |"
+  
     ENDIF
 
   DO JFLD = 1, SIZE (YLFL)
@@ -337,21 +344,34 @@ MODULE FIELD_MODULE
     SELECT TYPE (YLF => YLFL (JFLD)%PTR)
       CLASS IS (FIELD_1RB)
         CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
-        IF (N_DIMS == 1 ) THEN
-            PRINT *, JFLD, "FIELD_1RB:", DIM_NAMES(1),"=", IUBOUNDS(1)-ILBOUNDS(1) + 1
-        ELSE IF (N_DIMS == 2 ) THEN
-          PRINT *, JFLD, "FIELD_1RB:", IUBOUNDS(1)-ILBOUNDS(1) + 1, 1
+           IF (N_DIMS == 2 ) THEN
+          WRITE (*,"(A1, I3, A1, 1X, A9, 9X, &
+              &      A1, 1X,I4, A10)") &
+              &     "[",JFLD, "]", "FIELD_1RB",&
+              &     "|", IUBOUNDS(1)-ILBOUNDS(1) + 1, ' |   (1)| '
         ENDIF
       CLASS IS (FIELD_2RB)
         CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
         IF (N_DIMS == 3 ) THEN
-          PRINT *, JFLD, "FIELD_2RB:", IUBOUNDS(1)-ILBOUNDS(1) + 1, 1,  IUBOUNDS(2)-ILBOUNDS(2) + 1
+          WRITE (*,"(A1, I3, A1, 1X, A9, 9X,&
+                 &  A2, I4, A10, I4 ,A2)") &
+                 & "[",JFLD, "]", "FIELD_2RB",  &
+                 &  "| ", IUBOUNDS(1)-ILBOUNDS(1) + 1, ' |   (1)| ', IUBOUNDS(2)-ILBOUNDS(2) + 1," |"
         ELSE IF (N_DIMS == 2 ) THEN
-          PRINT *, JFLD, "FIELD_2RB:", IUBOUNDS(1:2)-ILBOUNDS(1:2) + 1
+          WRITE (*,"(A1, I3, A1, 1X,  A9, 9X, &
+                  &  A2, I4,A3,I4,A2)") &
+                  & "[",JFLD, "]", "FIELD_2RB",& 
+                  & "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1," |"
+          
         ENDIF
       CLASS IS (FIELD_3RB)
         CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
-        PRINT *, JFLD, "FIELD_3RB:", IUBOUNDS(1:3)-ILBOUNDS(1:3) + 1
+
+        WRITE (*,"(A1, I3, A1, 1X,  A9, 9X, &
+                &  A2, I4,A3,I4,A3,I4,A2)") &
+               & "[",JFLD, "]", "FIELD_3RB",& 
+              & "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1," | ",IUBOUNDS(3)-ILBOUNDS(3) + 1, " |"
+
       CLASS DEFAULT
         STOP 1
     END SELECT

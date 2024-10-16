@@ -123,11 +123,11 @@ IF (PRESENT(US)) THEN
 
   IF ((SIZE (UL) /= SIZE (VL)) .OR. (SIZE (SPVORL) /= SIZE (SPDIVL)) .OR. (SIZE (UL) /= SIZE (VSETUVS))) THEN
     PRINT*,"INVALID SIZES:"
-    PRINT *, " UL = ", SIZE (UL)
-    PRINT *, " VL = ", SIZE (VL)
-    PRINT *, " SPVORL = ", SIZE (SPVORL)
-    PRINT *, " SPDIVL = ", SIZE (SPDIVL)
-    PRINT *, " VSETUVS = ", SIZE (VSETUVS)
+    WRITE(*,*) " UL = ", SIZE (UL)
+    WRITE(*,*) " VL = ", SIZE (VL)
+    WRITE(*,*) " SPVORL = ", SIZE (SPVORL)
+    WRITE(*,*) " SPDIVL = ", SIZE (SPDIVL)
+    WRITE(*,*) " VSETUVS = ", SIZE (VSETUVS)
     STOP 1
   ENDIF
 
@@ -148,17 +148,17 @@ IF (PRESENT(US)) THEN
 
 
   IF (PRESENT(DUS) .AND. PRESENT(DVS))    THEN
-     PRINT *, "DUS/DVS PRESENT"
+     WRITE(*,*) "DUS/DVS PRESENT"
      LDUVDER = .TRUE.
      KFLDGUV = KFLDGUV + 2 * IFLDGUV
   ENDIF
   IF (PRESENT(VORS)) THEN
-    PRINT *, "VORS PRESENT"
+    WRITE(*,*) "VORS PRESENT"
      LDVORGP = .TRUE.
      KFLDGUV = KFLDGUV + IFLDGUV
   ENDIF
   IF (PRESENT(DIVS)) THEN
-    PRINT *, "DIVS PRESENT"
+    WRITE(*,*) "DIVS PRESENT"
      LDUVDER = .TRUE.
      KFLDGUV = KFLDGUV + IFLDGUV
   ENDIF
@@ -200,9 +200,9 @@ IF (PRESENT(SCALARS)) THEN
   SPSCALARL = LS (SPSCALARS, LDACC)
 
   IF (SIZE (SCALARL) /= SIZE (VSETS)) THEN
-    PRINT *, " SIZE (SCALARL) = ", SIZE (SCALARL)
-    PRINT *, " SIZE (SPSCALARS) = ", SIZE (SPSCALARS)
-    PRINT *, " SIZE (VSETS) = ", SIZE (VSETS)
+    WRITE(*,*) " SIZE (SCALARL) = ", SIZE (SCALARL)
+    WRITE(*,*) " SIZE (SPSCALARS) = ", SIZE (SPSCALARS)
+    WRITE(*,*) " SIZE (VSETS) = ", SIZE (VSETS)
     STOP 1
   ENDIF
 
@@ -215,7 +215,7 @@ IF (PRESENT(SCALARS)) THEN
   
   KFLDG = IFLDG
   IF (PRESENT(DSCALARS) .AND. PRESENT(DSCALARS_NS)) THEN
-    PRINT *, "DSCALARS/DSCALARS_NS PRESENT"
+    WRITE(*,*) "DSCALARS/DSCALARS_NS PRESENT"
      LDSCDERS = .TRUE.
      KFLDG = KFLDG + 2 * IFLDG
   ENDIF
@@ -347,49 +347,98 @@ INTEGER(KIND=JPIM),OPTIONAL     :: VSETS(:)                     !Meta data scala
   LOGICAL, INTENT(IN)          :: LDDIVGP                                         ! indicating if grid-point divergence is req.
   LOGICAL , INTENT(IN)         :: LDUVDER                                         ! indicating if E-W derivatives of u and v are req.
 
-  PRINT *, "NPROMA", NPROMA
-  PRINT *, "NGPBLKS", IGPBLKS
-  PRINT *, "ISPEC2 (Size of spectral fields)", ISPEC2
-  PRINT *, "LDSCDERS (Compute grid-point derivatives of scalar fields)", LDSCDERS
-  PRINT *, "LDUVDER  (Compute grid-point derivatives of vector fields)", LDUVDER
-  PRINT *, "LDVORGP  (Compute grid-point vorticity)    ", LDVORGP
-  PRINT *, "LDDIVGP  (Compute grid-point divergence)   ", LDDIVGP
+  WRITE(*,*) "-----------------------------------------------"
+  WRITE(*,*) "DIMENSIONS"
+  WRITE(*,*) "-----------------------------------------------"
+  WRITE(*,'(A11,I4,A2)') "NPROMA   | ", NPROMA,  ' |'
+  WRITE(*,'(A11,I4,A2)') "NBLKS    | ", IGPBLKS, ' |'
+  WRITE(*,'(A11,I4,A2)') "NSPECS   | ", ISPEC2,  ' |'
+  WRITE(*,'(A11,L4,A2)') "LDUVDER  | ", LDUVDER,  ' |'
+  WRITE(*,'(A11,L4,A2)') "LDVORGP  | ", LDVORGP,  ' |'
+  WRITE(*,'(A11,L4,A2)') "LDDIVGP  | ", LDDIVGP,  ' |'
+  WRITE(*,'(A11,L4,A2)') "LDSCDERS | ", LDSCDERS,  ' |'
+  WRITE(*,*) "-----------------------------------------------"
+  
+  WRITE(*,*) ""
+  WRITE(*,*) "-----------------------------------------------"
+  WRITE(*,*) "#  Input spectral vector fields:", SIZE(SPVORS), "#"
+  WRITE(*,*) "-----------------------------------------------"
+  IF (PRESENT(SPVORS)) CALL PRINT_DEBUG_FIELDS(SPVORS, "SPVORS", (/"SPEC   ", "NLEV   "/))
+  WRITE(*,'(31X,A8)') "========"
+  WRITE(*,'(33X,I4)')  IFLDSUV
 
-  PRINT *, ""
-  PRINT *, "Input spectral vector fields  "
-  IF (PRESENT(SPVORS)) CALL PRINT_DEBUG_FIELDS(SPVORS, "SPVORS and SPDIVS (in)", (/"ISPEC2 ", "NLEV   "/))
-  PRINT *, "                                          ========"
-  PRINT *, "=> IFLDSUV:                         ", IFLDSUV
-  PRINT *, "Size of ZSPVOR [SPEC, NFIELDS]", UBOUND(ZSPVOR) - LBOUND(ZSPVOR) + 1
-  PRINT *, "Size of ZSPDIV [SPEC, NFIELDS]", UBOUND(ZSPDIV) - LBOUND(ZSPDIV) + 1
+  IF (PRESENT(SPVORS)) CALL PRINT_DEBUG_FIELDS(SPDIVS, "SPDIVS", (/"NSPECS ", "NLEV   "/))
+  WRITE(*,'(31X,A8)') "========"
+  WRITE(*,'(33X,I4)')  IFLDSUV
+  WRITE(*,*) "....................................."
+  
+  WRITE(*,'(8X,A17)') "| NSPECS | NFIELDS|"
+  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') "ZSPVOR", " | ", &
+        & UBOUND(ZSPVOR,1) - LBOUND(ZSPVOR,1) + 1, " | " , &
+        & UBOUND(ZSPVOR,2) - LBOUND(ZSPVOR,2) + 1, " |"
+  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') "ZSPDIV", " | ", &
+        & UBOUND(ZSPDIV,1) - LBOUND(ZSPDIV,1) + 1, " | " , &
+        & UBOUND(ZSPDIV,2) - LBOUND(ZSPDIV,2) + 1, " |"
+  WRITE(*,*) "-----------------------------------------------"
+  WRITE(*,*) ""
+  WRITE(*,*) "-----------------------------------------------"
+  WRITE(*,*) "#  Input spectral scalar fields:", SIZE(SPSCALARS), "#"
+  WRITE(*,*) "-----------------------------------------------"
+  
+  IF (PRESENT(SPSCALARS)) CALL PRINT_DEBUG_FIELDS(SPSCALARS,"SPSCALARS", (/"NSPECS ", "NLEV   "/))  
+  WRITE(*,'(31X,A8)') "========"
+  WRITE(*,'(33X,I4)')  IFLDS
+  
+  WRITE(*,*) "....................................."
+  WRITE(*,'(8X,A17)') "| NSPECS | NFIELDS|"
+  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') "ZSPSCALAR", " | ", &
+        & UBOUND(ZSPSCALAR,1) - LBOUND(ZSPSCALAR,1) + 1, " | " , &
+        & UBOUND(ZSPSCALAR,2) - LBOUND(ZSPSCALAR,2) + 1, " |"
+ WRITE(*,*) "-----------------------------------------------"  
+  WRITE(*,*) ""
+  WRITE(*,*) "-----------------------------------------------"
+  WRITE(*,*) "#  Output grid-point vector fields:",  SIZE(US), "#"
+  WRITE(*,*) "-----------------------------------------------"
+  
+  IF (PRESENT(US)) CALL PRINT_DEBUG_FIELDS(US,"US", (/"NPROMA ","NLEV   ", "NBLKS  "/))
+  WRITE(*,'(31X,A8)') "========"
+  WRITE(*,'(33X,I4)')  IFLDGUV
+  
+  IF (PRESENT(US)) CALL PRINT_DEBUG_FIELDS(US,"VS", (/"NPROMA ","NLEV   ", "NBLKS  "/))
+  WRITE(*,'(31X,A8)') "========"
+  WRITE(*,'(33X,I4)')  IFLDGUV
+  
+  IF (PRESENT(VORS)) CALL PRINT_DEBUG_FIELDS(VORS,"VORS")
+  IF (PRESENT(DIVS)) CALL PRINT_DEBUG_FIELDS(DIVS,"DIVS")
+  IF (PRESENT(DUS)) CALL PRINT_DEBUG_FIELDS(DUS, "DUS")
+  IF (PRESENT(DVS)) CALL PRINT_DEBUG_FIELDS(DVS, "DVS")
 
-  PRINT *, ""
-  PRINT *, "Input spectral scalar fields"
-  IF (PRESENT(SPSCALARS)) CALL PRINT_DEBUG_FIELDS(SPSCALARS,"SPSCALARS(in)", (/"ISPEC2 ", "NLEV   "/))  
-  PRINT *, "                                          ========"
-  PRINT *, "=> IFLDS:                            ", IFLDS
-  PRINT *, "Size of ZSPSCALAR [SPEC, NFIELDS]", UBOUND(ZSPSCALAR) - LBOUND(ZSPSCALAR) + 1
-
-  PRINT *, ""
-  PRINT *, "#Output grid-point vector fields"
-  IF (PRESENT(US)) CALL PRINT_DEBUG_FIELDS(US,"US  and VS (out)", (/"NPROMA ","NLEV   ", "NGPBLKS"/))
-  IF (PRESENT(VORS)) CALL PRINT_DEBUG_FIELDS(VORS,"VORS (out)")
-  IF (PRESENT(DIVS)) CALL PRINT_DEBUG_FIELDS(DIVS,"DIVS (out)")
-  IF (PRESENT(DUS)) CALL PRINT_DEBUG_FIELDS(DUS, "DUS (out)")
-  IF (PRESENT(DVS)) CALL PRINT_DEBUG_FIELDS(DVS, "DVS (out)")
-  PRINT *, "                                          ========"
-  PRINT *, "=> IFLDGUV                          ", IFLDGUV
-  PRINT *, "Size of PGPUV [NPROMA, NLEV, NFIELDS, NGPBLKS]", UBOUND(ZGPUV) - LBOUND(ZGPUV) + 1
-
-  PRINT *, ""
-  PRINT *, "#Output grid-point scalar fields"
-  IF (PRESENT(SCALARS)) CALL PRINT_DEBUG_FIELDS(SCALARS, "SCALARS (out)", (/"NPROMA ", "NLEV   ", "NGPBLKS"/))
-  IF (PRESENT(DSCALARS)) CALL PRINT_DEBUG_FIELDS(DSCALARS, "DSCALARS (out)")
-  IF (PRESENT(DSCALARS_NS)) CALL PRINT_DEBUG_FIELDS(DSCALARS_NS,"DSCALARS_NS (out)")
-  PRINT *, "                                          ========"
-  PRINT *, "=> IFLDG                            ", IFLDG
-  PRINT *, "Size of PGP [NPROMA, NLEV, NGPBLKS]", UBOUND(ZGP) - LBOUND(ZGP) + 1
-
+  WRITE(*,*) "....................................."
+  WRITE(*,'(8X,A37)') "| NPROMA | NLEVS  | NFIELDS| NBLKS  |"
+  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A3, I6, A2)') "PGPUV", " | ", &
+        & UBOUND(ZGPUV,1) - LBOUND(ZGPUV,1) + 1, " | ", &
+        & UBOUND(ZGPUV,2) - LBOUND(ZGPUV,2) + 1, " | ", &
+        & UBOUND(ZGPUV,3) - LBOUND(ZGPUV,3) + 1, " | ", &
+        & UBOUND(ZGPUV,4) - LBOUND(ZGPUV,4) + 1, " |"
+  WRITE(*,*) "-----------------------------------------------"
+  
+  WRITE(*,*) ""
+  WRITE(*,*) "-----------------------------------------------"
+  WRITE(*,*) "#  Output grid-point scalar fields:",  SIZE(SCALARS), "#"
+  WRITE(*,*) "-----------------------------------------------"
+  
+  IF (PRESENT(SCALARS)) CALL PRINT_DEBUG_FIELDS(SCALARS, "SCALARS", (/"NPROMA ", "NLEV   ", "NBLKS  "/))
+  IF (PRESENT(DSCALARS)) CALL PRINT_DEBUG_FIELDS(DSCALARS, "DSCALARS")
+  IF (PRESENT(DSCALARS_NS)) CALL PRINT_DEBUG_FIELDS(DSCALARS_NS,"DSCALARS_NS")
+  WRITE(*,'(31X,A8)') "========"
+  WRITE(*,'(33X,I4)')  IFLDG
+  WRITE(*,*) "....................................."
+  WRITE(*,'(8X,A28)') "| NPROMA | NLEVS  | NBLKS  |"
+  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') "PGP", " | ", &
+        & UBOUND(ZGP,1) - LBOUND(ZGP,1) + 1, " | " , &
+        & UBOUND(ZGP,2) - LBOUND(ZGP,2) + 1, " | ", &
+        & UBOUND(ZGP,3) - LBOUND(ZGP,3) + 1, " |"
+  WRITE(*,*) "---------------------------------------------------"
   
 
   
