@@ -13,21 +13,37 @@ INTEGER(KIND=JPIM) :: NFLEVL
 
 CLASS (FIELD_3RB), POINTER :: YLU, YLV              !A vector field in grid space(US,VS) 
 CLASS (FIELD_3RB), POINTER :: YLT, YLQ              !Two scalar fields in grid space T and Q
-CLASS (FIELD_2RB), POINTER :: YLSPVOR, YLSPDIV        !A Vector field in spectral space(YLSPVOR,SPDIVS)
-CLASS (FIELD_2RB), POINTER :: YLSPT, YLSPQ              !Two scalar fields in spectral space ST and SQ
+CLASS (FIELD_2RB), POINTER :: YLSPVOR, YLSPDIV      !A Vector field in spectral space(YLSPVOR,SPDIVS)
+CLASS (FIELD_2RB), POINTER :: YLSPT, YLSPQ          !Two scalar fields in spectral space ST and SQ
 
 CLASS (FIELD_2RB), POINTER :: YLU1, YLV1            !A surfacic vector field in grid space(GU1,GV1) 
 CLASS (FIELD_2RB), POINTER :: YLT1, YLQ1            !Two surfacic scalar fields in grid space GT1 and GQ1
-CLASS (FIELD_1RB), POINTER :: YLSPVOR1, YLSPDIV1        !A surfacic vector field in spectral space(SPVOR1,SPDIV1)
-CLASS (FIELD_1RB), POINTER :: YLSPT1, YLSPQ1            !Two surfacic scalar fields in spectral space ST1 and SQ1
+CLASS (FIELD_1RB), POINTER :: YLSPVOR1, YLSPDIV1    !A surfacic vector field in spectral space(SPVOR1,SPDIV1)
+CLASS (FIELD_1RB), POINTER :: YLSPT1, YLSPQ1        !Two surfacic scalar fields in spectral space ST1 and SQ1
 
-TYPE (FIELD_BASIC_PTR), ALLOCATABLE :: US (:), VS (:)     !The lists of vector field view in grid space
-TYPE (FIELD_BASIC_PTR), ALLOCATABLE :: SCALARS (:)         !The lists of scalar field view in grid space
+! Derivatives
+CLASS (FIELD_3RB), POINTER :: YLDU, YLDV              
+CLASS (FIELD_3RB), POINTER :: YLDTEW, YLDQEW          
+CLASS (FIELD_3RB), POINTER :: YLDTNS, YLDQNS          
+
+CLASS (FIELD_2RB), POINTER :: YLDU1, YLDV1            
+CLASS (FIELD_2RB), POINTER :: YLDT1EW, YLDQ1EW        
+CLASS (FIELD_2RB), POINTER :: YLDT1NS, YLDQ1NS        
+
+! Vorticity and divergence
+CLASS (FIELD_3RB), POINTER :: YLUVDIV
+CLASS (FIELD_2RB), POINTER :: YLUV1DIV
+CLASS (FIELD_3RB), POINTER :: YLUVVOR
+CLASS (FIELD_2RB), POINTER :: YLUV1VOR
+
+
+TYPE (FIELD_BASIC_PTR), ALLOCATABLE :: US (:), VS (:)         !The lists of vector field view in grid space
+TYPE (FIELD_BASIC_PTR), ALLOCATABLE :: SCALARS (:)            !The lists of scalar field view in grid space
 TYPE (FIELD_BASIC_PTR), ALLOCATABLE :: SPVORS (:), SPDIVS (:) !The lists of vector fields view in spectral space
-TYPE (FIELD_BASIC_PTR), ALLOCATABLE :: SPSCALARS (:)         !The lists of scalar fields view in spectral space
+TYPE (FIELD_BASIC_PTR), ALLOCATABLE :: SPSCALARS (:)          !The lists of scalar fields view in spectral space
 
-INTEGER(KIND=JPIM), ALLOCATABLE :: NBSETLEV (:)          !Meta data
-INTEGER(KIND=JPIM), ALLOCATABLE :: VSETUVS (:), VSETS (:) !Meta data
+INTEGER(KIND=JPIM), ALLOCATABLE :: NBSETLEV (:)               !Meta data
+INTEGER(KIND=JPIM), ALLOCATABLE :: VSETUVS (:), VSETS (:)     !Meta data
 
 PROCEDURE (FSPGL_INTF), POINTER :: FSPGL_PROC => NULL ()
 
@@ -48,26 +64,48 @@ ENDDO
 
 NFLEVL = COUNT (NBSETLEV == MYSETV)
 
-! Create fields
-CALL FIELD_NEW(YLU, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
-CALL FIELD_NEW(YLV, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
-CALL FIELD_NEW(YLT, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
-CALL FIELD_NEW(YLQ, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
-
+! Create input spectral fields
 CALL FIELD_NEW(YLSPVOR, UBOUNDS=[NSPEC2, NFLEVL])
 CALL FIELD_NEW(YLSPDIV, UBOUNDS=[NSPEC2, NFLEVL])
 CALL FIELD_NEW(YLSPT, UBOUNDS=[NSPEC2, NFLEVL])
 CALL FIELD_NEW(YLSPQ, UBOUNDS=[NSPEC2, NFLEVL])
 
+CALL FIELD_NEW(YLSPVOR1, UBOUNDS=[NSPEC2])
+CALL FIELD_NEW(YLSPDIV1, UBOUNDS=[NSPEC2])
+CALL FIELD_NEW(YLSPT1, UBOUNDS=[NSPEC2, NFLEVL])
+CALL FIELD_NEW(YLSPQ1, UBOUNDS=[NSPEC2, NFLEVL])
+
+! Create output grid-point fields
 CALL FIELD_NEW(YLU1, UBOUNDS=[NPROMA, NGPBLKS])
 CALL FIELD_NEW(YLV1, UBOUNDS=[NPROMA, NGPBLKS])
 CALL FIELD_NEW(YLT1, UBOUNDS=[NPROMA, NGPBLKS])
 CALL FIELD_NEW(YLQ1, UBOUNDS=[NPROMA, NGPBLKS])
 
-CALL FIELD_NEW(YLSPVOR1, UBOUNDS=[NSPEC2])
-CALL FIELD_NEW(YLSPDIV1, UBOUNDS=[NSPEC2])
-CALL FIELD_NEW(YLSPT1, UBOUNDS=[NSPEC2, NFLEVL])
-CALL FIELD_NEW(YLSPQ1, UBOUNDS=[NSPEC2, NFLEVL])
+CALL FIELD_NEW(YLU, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLV, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLT, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLQ, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+
+! Create output grid-point derivatives
+CALL FIELD_NEW(YLDU, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLDV, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLDTEW, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLDQEW, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLDTNS, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLDQNS, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+
+CALL FIELD_NEW(YLDU1, UBOUNDS=[NPROMA, NGPBLKS])
+CALL FIELD_NEW(YLDV1, UBOUNDS=[NPROMA, NGPBLKS])
+CALL FIELD_NEW(YLDT1EW, UBOUNDS=[NPROMA, NGPBLKS])
+CALL FIELD_NEW(YLDQ1EW, UBOUNDS=[NPROMA, NGPBLKS])
+CALL FIELD_NEW(YLDT1NS, UBOUNDS=[NPROMA, NGPBLKS])
+CALL FIELD_NEW(YLDQ1NS, UBOUNDS=[NPROMA, NGPBLKS])
+
+! Create output vorticity and divergence
+CALL FIELD_NEW(YLUVDIV, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLUV1DIV, UBOUNDS=[NPROMA, NGPBLKS])
+CALL FIELD_NEW(YLUVVOR, UBOUNDS=[NPROMA, NFLEVG, NGPBLKS])
+CALL FIELD_NEW(YLUV1VOR, UBOUNDS=[NPROMA, NGPBLKS])
 
 ! Create list arguments
 PRINT*,"CALL 1"
@@ -136,7 +174,25 @@ CALL INV_TRANS_FIELD_API (SPVORS=SPVORS, SPDIVS=SPDIVS,  SPSCALARS=SPSCALARS, &
                           & US=US, VS=VS,  SCALARS=SCALARS,&
                           & VSETUVS=VSETUVS,&
                           & VSETS=VSETS, LDACC=LLACC,&
-                          & FSPGL_PROC=FSPGL_PROC, LDVERBOSE = .TRUE.)
+                          & FSPGL_PROC=FSPGL_PROC)
+
+
+
+PRINT*,"CALL 4: adding derivatives and vorticity and divergence"
+
+FSPGL_PROC => FSPGL
+
+  CALL INV_TRANS_FIELD_API (SPVORS=[B(YLSPVOR), B(YLSPVOR1)], SPDIVS=[B(YLSPDIV), B(YLSPDIV1)], &
+                          & SPSCALARS=[B(YLSPT), B(YLSPQ), B(YLSPT1), B(YLSPQ1)], &
+                          & US=[B(YLU), B(YLU1)],  VS=[B(YLV), B(YLV1)], &                        
+                          & VORS=[B(YLUVVOR), B(YLUV1VOR)],  DIVS=[B(YLUVDIV), B(YLUV1DIV)], &                        
+                          & SCALARS=[B(YLT), B(YLQ), B(YLT1), B(YLQ1)], &                        
+                          & DUS=[B(YLDU), B(YLDU1)],  DVS=[B(YLDV), B(YLDV1)], &                        
+                          & DSCALARSEW=[B(YLDTEW), B(YLDQEW), B(YLDT1EW), B(YLDQ1EW)], &                        
+                          & DSCALARSNS=[B(YLDTNS), B(YLDQNS), B(YLDT1NS), B(YLDQ1NS)], &                        
+                          & VSETUVS=[NBSETLEV, NBSETSP], &
+                          & VSETS=[NBSETLEV, NBSETLEV, NBSETSP, NBSETSP], &
+                          & LDACC=LLACC, FSPGL_PROC=FSPGL_PROC, LDVERBOSE =.TRUE.)  !  FSPGL_PROC not PRESENT, because it is NULL associated
 
 
 CONTAINS

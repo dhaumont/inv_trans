@@ -32,7 +32,7 @@ CONTAINS
 ! Spectral to grid space transformation
 SUBROUTINE INV_TRANS_FIELD_API(SPVORS,SPDIVS,SPSCALARS, &
                              & US, VS, VORS,DIVS,SCALARS, &
-                             & DUS, DVS, DSCALARS, DSCALARS_NS, &
+                             & DUS, DVS, DSCALARSEW, DSCALARSNS, &
                              & VSETUVS, VSETS, &
                              & LDACC, LDVERBOSE, &
 			                       & FSPGL_PROC)
@@ -46,7 +46,7 @@ TYPE(FIELD_BASIC_PTR),OPTIONAL  :: VORS(:),DIVS(:)             !Grid vector fiel
 TYPE(FIELD_BASIC_PTR),OPTIONAL  :: SCALARS(:)                  !Grid scalar fields     (out)
 
 TYPE(FIELD_BASIC_PTR),OPTIONAL  :: DUS(:),DVS(:)               !Grid vector fields derivatives EW (out)
-TYPE(FIELD_BASIC_PTR),OPTIONAL  :: DSCALARS(:), DSCALARS_NS(:) !Grid scalar fields derivatives NS(out)
+TYPE(FIELD_BASIC_PTR),OPTIONAL  :: DSCALARSEW(:), DSCALARSNS(:) !Grid scalar fields derivatives EW and NS (out)
 
 INTEGER(KIND=JPIM),OPTIONAL     :: VSETUVS(:)                   !Meta data vector fields
 INTEGER(KIND=JPIM),OPTIONAL     :: VSETS(:)                     !Meta data scalar fields
@@ -67,7 +67,7 @@ TYPE(FIELD_2RB_VIEW), ALLOCATABLE  :: VORL(:),DIVL(:)
 TYPE(FIELD_2RB_VIEW), ALLOCATABLE  :: SCALARL(:)                   
 
 TYPE(FIELD_2RB_VIEW), ALLOCATABLE :: DUL(:),DVL(:)                 
-TYPE(FIELD_2RB_VIEW), ALLOCATABLE :: DSCALARL(:), DSCALARS_NL(:) 
+TYPE(FIELD_2RB_VIEW), ALLOCATABLE :: DSCALAREWL(:), DSCALARNSL(:) 
 
 REAL(KIND=JPRB),ALLOCATABLE :: ZSPVOR(:,:),ZSPDIV(:,:)              ! Spectral vector fields (in)
 REAL(KIND=JPRB),ALLOCATABLE :: ZSPSCALAR(:,:)                       ! Spectral scalar fields (in)
@@ -141,28 +141,29 @@ IF (PRESENT(US)) THEN
   ISPEC2 = SIZE(SPVORL(1)%V,1) ! Size of spectral fields
   IFLDSUV = SIZE(SPVORL)       ! Number of input spectral vector fields
   
-  LDVORGP = .FALSE.                              
-  LDDIVGP = .FALSE.                             
-  LDUVDER  = .FALSE.                            
+  LDUVDER  = .FALSE.
+  LDVORGP = .FALSE.
+  LDDIVGP = .FALSE.
   LDSCDERS = .FALSE. 
 
   KFLDGUV = KFLDGUV + 2
 
-
-  IF (PRESENT(DUS) .AND. PRESENT(DVS))    THEN
-     WRITE(*,*) "DUS/DVS PRESENT"
+  IF (PRESENT(DUS) .AND. PRESENT(DVS))    THEN     
      LDUVDER = .TRUE.
      KFLDGUV = KFLDGUV + 2
+     DUL = LG (DUS)
+     DVL = LG (DVS)
+   
   ENDIF
-  IF (PRESENT(VORS)) THEN
-    WRITE(*,*) "VORS PRESENT"
+  IF (PRESENT(VORS)) THEN    
      LDVORGP = .TRUE.
      KFLDGUV = KFLDGUV + 1
+     VORL = LG (VORS)     
   ENDIF
-  IF (PRESENT(DIVS)) THEN
-    WRITE(*,*) "DIVS PRESENT"
-     LDUVDER = .TRUE.
+  IF (PRESENT(DIVS)) THEN   
+    LDDIVGP = .TRUE.
      KFLDGUV = KFLDGUV + 1
+     DIVL = LG (DIVS)
   ENDIF
   
   ! Allocate vector field input in spectral space
@@ -197,7 +198,6 @@ IF (PRESENT(SCALARS)) THEN
     STOP 1
   ENDIF
 
-
   SCALARL = LG (SCALARS, LDACC)
   SPSCALARL = LS (SPSCALARS, LDACC)
 
@@ -216,13 +216,14 @@ IF (PRESENT(SCALARS)) THEN
   IFLDS = SIZE(SPSCALARL)  ! Number of input scalar fields in spectral space
   
   KFLDG = IFLDG
-  IF (PRESENT(DSCALARS) .AND. PRESENT(DSCALARS_NS)) THEN
-    WRITE(*,*) "DSCALARS/DSCALARS_NS PRESENT"
+  IF (PRESENT(DSCALARSEW) .AND. PRESENT(DSCALARSNS)) THEN
      LDSCDERS = .TRUE.
      KFLDG = KFLDG + 2 * IFLDG
+     DSCALAREWL = LG (DSCALARSEW)
+     DSCALARNSL = LG (DSCALARSNS)
   ENDIF
 
-  ! Allocate scalar field input in spectral space
+   ! Allocate scalar field input in spectral space
   ALLOCATE(ZSPSCALAR(ISPEC2,IFLDS))
   
   ! Allocate scalar field output in grid space
@@ -238,23 +239,26 @@ ELSE
 ENDIF
 
 ! 3. CALL INV_TRANS
-
 IF (LLVERBOSE)  THEN
   CALL PRINT_DEBUG_INV_TRANS_FIELD_API(ZSPVOR, ZSPDIV, ZSPSCALAR, ZGPUV, ZGP, &
                   & SPVORS,SPDIVS,SPSCALARS, &
                   & US, VS, VORS,DIVS,SCALARS, &
-                  & DUS, DVS, DSCALARS, DSCALARS_NS, &
-                  & VSETUVS, VSETS, IFLDSUV,IFLDS,IFLDG,IFLDGUV,LDSCDERS,LDVORGP,LDDIVGP, LDUVDER, &
+                  & DUS, DVS, DSCALARSEW, DSCALARSNS, &
+                  & VSETUVS, VSETS, IFLDSUV,IFLDS,IFLDG,IFLDGUV, &
+                  & LDSCDERS,LDVORGP,LDDIVGP, LDUVDER, &
                   & ISPEC2, IPROMA,IGPBLKS,KFLDG,KFLDGUV)
 ENDIF
+
 
 IF (PRESENT (FSPGL_PROC)) THEN
 	CALL INV_TRANS(PSPVOR = ZSPVOR,PSPDIV = ZSPDIV,PGPUV = ZGPUV,KVSETUV = VSETUVS, &
 	             & PSPSC2 = ZSPSCALAR,PGP2 = ZGP,KVSETSC2 = VSETS, &
+               & LDSCDERS = LDSCDERS, LDVORGP = LDVORGP, LDDIVGP = LDDIVGP, LDUVDER = LDUVDER,  &
 	             & KPROMA = IPROMA,FSPGL_PROC=FSPGL_PROC, NGPBLKS = IGPBLKS) 
 ELSE
 	CALL INV_TRANS(PSPVOR = ZSPVOR,PSPDIV = ZSPDIV,PGPUV = ZGPUV,KVSETUV = VSETUVS, &
 	             & PSPSC2 = ZSPSCALAR,PGP2 = ZGP,KVSETSC2 = VSETS, &
+               & LDSCDERS = LDSCDERS, LDVORGP = LDVORGP, LDDIVGP = LDDIVGP, LDUVDER = LDUVDER,  &
 	             & KPROMA = IPROMA, NGPBLKS = IGPBLKS) 
 ENDIF
 ! 4. Copy back data to fields
@@ -298,8 +302,8 @@ ENDDO
 OFFSET = IFLDG
 IF (LDSCDERS) THEN
   DO JFLD=1,IFLDG
-    DSCALARL(JFLD)%V(:,:) = ZGP(:,OFFSET+JFLD,:)
-    DSCALARS_NL(JFLD)%V(:,:) = ZGP(:,2 * OFFSET+JFLD,:)
+    DSCALAREWL(JFLD)%V(:,:) = ZGP(:,OFFSET+JFLD,:)
+    DSCALARNSL(JFLD)%V(:,:) = ZGP(:,2 * OFFSET+JFLD,:)
   ENDDO
 ENDIF
 
