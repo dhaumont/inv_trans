@@ -1,6 +1,7 @@
 MODULE INV_TRANS_FIELD_API_MODULE
 USE FIELD_MODULE
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PRINT_DEBUG_FIELD_API
 
 IMPLICIT NONE
 
@@ -33,7 +34,7 @@ SUBROUTINE INV_TRANS_FIELD_API(SPVORS,SPDIVS,SPSCALARS, &
                              & US, VS, VORS,DIVS,SCALARS, &
                              & DUS, DVS, DSCALARS, DSCALARS_NS, &
                              & VSETUVS, VSETS, &
-                             & LDACC, &
+                             & LDACC, LDVERBOSE, &
 			                       & FSPGL_PROC)
 			                      
 
@@ -51,6 +52,7 @@ INTEGER(KIND=JPIM),OPTIONAL     :: VSETUVS(:)                   !Meta data vecto
 INTEGER(KIND=JPIM),OPTIONAL     :: VSETS(:)                     !Meta data scalar fields
 
 LOGICAL, OPTIONAL :: LDACC
+LOGICAL, OPTIONAL :: LDVERBOSE
 PROCEDURE (FSPGL_INTF), OPTIONAL :: FSPGL_PROC
 
 ! Local variables
@@ -88,9 +90,12 @@ LOGICAL          :: LDSCDERS                                        ! indicating
 LOGICAL          :: LDVORGP                                         ! indicating if grid-point vorticity is req.
 LOGICAL          :: LDDIVGP                                         ! indicating if grid-point divergence is req.
 LOGICAL          :: LDUVDER                                         ! indicating if E-W derivatives of u and v are req.
-
+LOGICAL          :: LLVERBOSE                                       ! indicating if verbose output is req.
 #include "inv_trans.h"
 
+
+LLVERBOSE = .FALSE.
+IF (PRESENT(LDVERBOSE))  LLVERBOSE = LDVERBOSE
 
 ! 1. VECTOR FIELDS TRANSFORMATION
 
@@ -119,11 +124,11 @@ IF (PRESENT(US)) THEN
 
   IF ((SIZE (UL) /= SIZE (VL)) .OR. (SIZE (SPVORL) /= SIZE (SPDIVL)) .OR. (SIZE (UL) /= SIZE (VSETUVS))) THEN
     PRINT*,"INVALID SIZES:"
-    PRINT *, " UL = ", SIZE (UL)
-    PRINT *, " VL = ", SIZE (VL)
-    PRINT *, " SPVORL = ", SIZE (SPVORL)
-    PRINT *, " SPDIVL = ", SIZE (SPDIVL)
-    PRINT *, " VSETUVS = ", SIZE (VSETUVS)
+    WRITE(*,*) " UL = ", SIZE (UL)
+    WRITE(*,*) " VL = ", SIZE (VL)
+    WRITE(*,*) " SPVORL = ", SIZE (SPVORL)
+    WRITE(*,*) " SPDIVL = ", SIZE (SPDIVL)
+    WRITE(*,*) " VSETUVS = ", SIZE (VSETUVS)
     STOP 1
   ENDIF
 
@@ -144,19 +149,19 @@ IF (PRESENT(US)) THEN
 
 
   IF (PRESENT(DUS) .AND. PRESENT(DVS))    THEN
-     PRINT *, "DUS/DVS PRESENT"
+     WRITE(*,*) "DUS/DVS PRESENT"
      LDUVDER = .TRUE.
-     KFLDGUV = KFLDGUV + 2 * IFLDGUV
+     KFLDGUV = KFLDGUV + 2
   ENDIF
   IF (PRESENT(VORS)) THEN
-    PRINT *, "VORS PRESENT"
+    WRITE(*,*) "VORS PRESENT"
      LDVORGP = .TRUE.
-     KFLDGUV = KFLDGUV + IFLDGUV
+     KFLDGUV = KFLDGUV + 1
   ENDIF
   IF (PRESENT(DIVS)) THEN
-    PRINT *, "DIVS PRESENT"
+    WRITE(*,*) "DIVS PRESENT"
      LDUVDER = .TRUE.
-     KFLDGUV = KFLDGUV + IFLDGUV
+     KFLDGUV = KFLDGUV + 1
   ENDIF
   
   ! Allocate vector field input in spectral space
@@ -164,7 +169,7 @@ IF (PRESENT(US)) THEN
   ALLOCATE(ZSPDIV(ISPEC2,IFLDSUV))
 
   ! Allocate vector field output in grid space
-  ALLOCATE(ZGPUV(IPROMA,KFLDGUV,2,IGPBLKS)) 
+  ALLOCATE(ZGPUV(IPROMA,IFLDGUV,KFLDGUV,IGPBLKS)) 
   
   ! Copy from fields to temporary arrays (1D copy thanks to FIELD VIEW)
   DO JFLD=1,IFLDSUV
@@ -196,9 +201,9 @@ IF (PRESENT(SCALARS)) THEN
   SPSCALARL = LS (SPSCALARS, LDACC)
 
   IF (SIZE (SCALARL) /= SIZE (VSETS)) THEN
-    PRINT *, " SIZE (SCALARL) = ", SIZE (SCALARL)
-    PRINT *, " SIZE (SPSCALARS) = ", SIZE (SPSCALARS)
-    PRINT *, " SIZE (VSETS) = ", SIZE (VSETS)
+    WRITE(*,*) " SIZE (SCALARL) = ", SIZE (SCALARL)
+    WRITE(*,*) " SIZE (SPSCALARS) = ", SIZE (SPSCALARS)
+    WRITE(*,*) " SIZE (VSETS) = ", SIZE (VSETS)
     STOP 1
   ENDIF
 
@@ -211,7 +216,7 @@ IF (PRESENT(SCALARS)) THEN
   
   KFLDG = IFLDG
   IF (PRESENT(DSCALARS) .AND. PRESENT(DSCALARS_NS)) THEN
-    PRINT *, "DSCALARS/DSCALARS_NS PRESENT"
+    WRITE(*,*) "DSCALARS/DSCALARS_NS PRESENT"
      LDSCDERS = .TRUE.
      KFLDG = KFLDG + 2 * IFLDG
   ENDIF
@@ -233,6 +238,15 @@ ENDIF
 
 ! 3. CALL INV_TRANS
 
+IF (LLVERBOSE)  THEN
+  CALL PRINT_DEBUG_INV_TRANS_FIELD_API(ZSPVOR, ZSPDIV, ZSPSCALAR, ZGPUV, ZGP, &
+                  & SPVORS,SPDIVS,SPSCALARS, &
+                  & US, VS, VORS,DIVS,SCALARS, &
+                  & DUS, DVS, DSCALARS, DSCALARS_NS, &
+                  & VSETUVS, VSETS, IFLDSUV,IFLDS,IFLDG,IFLDGUV,LDSCDERS,LDVORGP,LDDIVGP, LDUVDER, &
+                  & ISPEC2, IPROMA,IGPBLKS,KFLDG,KFLDGUV)
+ENDIF
+
 IF (PRESENT (FSPGL_PROC)) THEN
 	CALL INV_TRANS(PSPVOR = ZSPVOR,PSPDIV = ZSPDIV,PGPUV = ZGPUV,KVSETUV = VSETUVS, &
 	             & PSPSC2 = ZSPSCALAR,PGP2 = ZGP,KVSETSC2 = VSETS, &
@@ -245,33 +259,34 @@ ENDIF
 ! 4. Copy back data to fields
 
 ! Copy vector fields back from temporary vector arrays
+OFFSET = 1
 DO JFLD=1,IFLDGUV
-  UL(JFLD)%V(:,:) = ZGPUV(:,JFLD,1,:)
-  VL(JFLD)%V(:,:) = ZGPUV(:,JFLD,2,:)
+  UL(JFLD)%V(:,:) = ZGPUV(:,JFLD,OFFSET,:)
+  VL(JFLD)%V(:,:) = ZGPUV(:,JFLD,OFFSET + 1,:)
 ENDDO
-
+OFFSET = OFFSET + 2
 ! copy derivatives, divergences and vorticities back from temporary vector arrays
-OFFSET = IFLDGUV
+
 IF (LDUVDER) THEN
   DO JFLD=1,IFLDGUV
-    DUL(JFLD)%V(:,:) = ZGPUV(:,OFFSET+JFLD,1,:)
-    DVL(JFLD)%V(:,:) = ZGPUV(:,OFFSET+JFLD,2,:)
+    DUL(JFLD)%V(:,:) = ZGPUV(:,JFLD,OFFSET ,:)
+    DVL(JFLD)%V(:,:) = ZGPUV(:,JFLD,OFFSET + 1 ,:)
   ENDDO
-  OFFSET = OFFSET + IFLDGUV
+  OFFSET = OFFSET + 2
 ENDIF
   
 IF (LDVORGP) THEN
   DO JFLD=1,IFLDGUV
-    VORL(JFLD)%V(:,:) = ZGPUV(:,OFFSET+JFLD,1,:)
-  ENDDO
-  OFFSET = OFFSET + IFLDGUV
+    VORL(JFLD)%V(:,:) = ZGPUV(:,JFLD,OFFSET,:)
+  ENDDO  
+  OFFSET = OFFSET + 1
 ENDIF
 
 IF (LDDIVGP) THEN
   DO JFLD=1,IFLDGUV
-    DIVL(JFLD)%V(:,:) = ZGPUV(:,OFFSET+JFLD,1,:)
+    DIVL(JFLD)%V(:,:) = ZGPUV(:,JFLD,OFFSET,:)
   ENDDO
-  OFFSET = OFFSET + IFLDGUV
+  OFFSET = OFFSET + 1
 ENDIF
 
 ! Copy scalar fields back from temporary scalar arrays
@@ -280,15 +295,11 @@ DO JFLD=1,IFLDG
 ENDDO
 
 OFFSET = IFLDG
-
 IF (LDSCDERS) THEN
   DO JFLD=1,IFLDG
     DSCALARL(JFLD)%V(:,:) = ZGP(:,OFFSET+JFLD,:)
+    DSCALARS_NL(JFLD)%V(:,:) = ZGP(:,2 * OFFSET+JFLD,:)
   ENDDO
-  DO JFLD=1,IFLDG
-    DSCALARS_NL(JFLD)%V(:,:) = ZGP(:,OFFSET+JFLD,:)
-  ENDDO
-  OFFSET = OFFSET + IFLDGUV
 ENDIF
 
 END SUBROUTINE INV_TRANS_FIELD_API
