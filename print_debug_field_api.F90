@@ -62,7 +62,12 @@ END SUBROUTINE PRINT_DEBUG_TABLE_HEADER
         ENDIF
       CLASS IS (FIELD_2RB)
         CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
-        IF (N_DIMS == 3 ) THEN
+        IF (N_DIMS == 4 ) THEN
+          WRITE (*,"(A1, I3, A1, 1X, A11,&
+                 &  A3, I7, A23, I7 ,A2)") &
+                 & "[",JFLD, "]", "FIELD_2RB",  &
+                 &  " | ", IUBOUNDS(1)-ILBOUNDS(1) + 1, ' |     (1) |     (1) | ', IUBOUNDS(2)-ILBOUNDS(2) + 1," |"
+        ELSE IF (N_DIMS == 3 ) THEN
           WRITE (*,"(A1, I3, A1, 1X, A11,&
                  &  A3, I7, A13, I7 ,A2)") &
                  & "[",JFLD, "]", "FIELD_2RB",  &
@@ -76,12 +81,19 @@ END SUBROUTINE PRINT_DEBUG_TABLE_HEADER
         ENDIF
       CLASS IS (FIELD_3RB)
         CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
-
+        IF (N_DIMS == 4 ) THEN
         WRITE (*,"(A1, I3, A1, 1X,  A11, &
-                &  A3, I7,A3,I7,A3,I7,A2)") &
+                &  A3, I7,A3,I7,A13,I7,A2)") &
                & "[",JFLD, "]", "FIELD_3RB",& 
-              &  "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1," | ",IUBOUNDS(3)-ILBOUNDS(3) + 1, " |"
-
+              &  "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1, &
+              & ' |     (1) | ',IUBOUNDS(3)-ILBOUNDS(3) + 1, " |"
+        ELSE IF (N_DIMS == 3 ) THEN
+          WRITE (*,"(A1, I3, A1, 1X,  A11, &
+          &  A3, I7,A3,I7,A3,I7,A2)") &
+         & "[",JFLD, "]", "FIELD_3RB",& 
+        &  "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1," | ",IUBOUNDS(3)-ILBOUNDS(3) + 1, " |"
+  
+        ENDIF
         CLASS IS (FIELD_4RB)
           CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
 
@@ -172,8 +184,8 @@ END SUBROUTINE PRINT_DEBUG_SEPARATOR
 
 SUBROUTINE PRINT_DEBUG_SUM(N)
 INTEGER, INTENT(IN) :: N
-WRITE(*,'(29X,A9)') "========="
-WRITE(*,'(32X,I4)')  N
+WRITE(*,'(29X,A19)') "==================="
+WRITE(*,'(35X,I4)')  N
 
 END SUBROUTINE PRINT_DEBUG_SUM
 
@@ -218,7 +230,7 @@ LOGICAL, INTENT(IN)          :: LDVORGP                                         
 LOGICAL, INTENT(IN)          :: LDDIVGP                                         ! indicating if grid-point divergence is req.
 LOGICAL , INTENT(IN)         :: LDUVDER                                         ! indicating if E-W derivatives of u and v are req.
 
-CHARACTER(LEN=7)            :: DIMSPL(2), DIMSPF(2), DIMGP2(2), DIMGP3(3), DIMGP4(4)
+CHARACTER(LEN=7)            :: DIMSPL(3), DIMSPF(2), DIMGP2(2), DIMGP3(3), DIMGP4(4)
 CALL PRINT_DEBUG_HEADER("DIMENSIONS")
 
 WRITE(*,'(A11,I4,A2)') "NPROMA   | ", NPROMA,  ' |'
@@ -232,7 +244,7 @@ CALL PRINT_DEBUG_FOOTER()
 
 CALL PRINT_DEBUG_HEADER("Input spectral vector fields:", SIZE(SPVORS))
 
-DIMSPL = (/"NSPECS ", "NLEVS  "/)
+DIMSPL = (/"NSPECS ", "NFIELDS", "NLEVS  "/)
 DIMSPF = (/"NSPECS ", "NFIELDS"/)
 DIMGP2 = (/"NPROMA ", "NGPBLKS"/)
 DIMGP3 = (/"NPROMA ", "NLEVS  ", "NGPBLKS"/)
@@ -266,12 +278,12 @@ CALL PRINT_DEBUG_FOOTER()
 CALL PRINT_DEBUG_HEADER("Output grid-point vector fields:", SIZE(US))
 
 IF (PRESENT(US)) THEN
-CALL PRINT_DEBUG_FIELDS(US,"US", DIMGP3)
+CALL PRINT_DEBUG_FIELDS(US,"US", DIMGP4)
 CALL PRINT_DEBUG_SUM(IFLDGUV)
 ENDIF
 
 IF (PRESENT(US))  THEN
-CALL PRINT_DEBUG_FIELDS(US,"VS", DIMGP3)
+CALL PRINT_DEBUG_FIELDS(US,"VS")
 CALL PRINT_DEBUG_SUM(IFLDGUV)
 ENDIF
 
@@ -301,7 +313,7 @@ CALL PRINT_DEBUG_FOOTER()
 
 CALL PRINT_DEBUG_HEADER("Output grid-point scalar fields:", SIZE(SCALARS))
 IF (PRESENT(SCALARS))  THEN
-  CALL PRINT_DEBUG_FIELDS(SCALARS, "SCALARS", DIMGP3)
+  CALL PRINT_DEBUG_FIELDS(SCALARS, "SCALARS", DIMGP4  )
   CALL PRINT_DEBUG_SUM(IFLDG)
 ENDIF
 
