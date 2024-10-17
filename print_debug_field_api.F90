@@ -87,9 +87,9 @@ END SUBROUTINE PRINT_DEBUG_TABLE_HEADER
 
           WRITE (*,"(A1, I3, A1, 1X,  A11, &
                 &  A3, I7,A3,I7,A3,I7,A3,I7,A2)") &
-               & "[",JFLD, "]", "FIELD_3RB",& 
+               & "[",JFLD, "]", "FIELD_4RB",& 
               &  "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1, &
-              & " | ",IUBOUNDS(3)-ILBOUNDS(3) + 1, " |",IUBOUNDS(4)-ILBOUNDS(4) + 1
+              & " | ",IUBOUNDS(3)-ILBOUNDS(3) + 1, " | ",IUBOUNDS(4)-ILBOUNDS(4) + 1, " |"
       
       CLASS DEFAULT
         STOP 1
