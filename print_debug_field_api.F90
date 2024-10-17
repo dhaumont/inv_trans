@@ -23,9 +23,13 @@ SUBROUTINE PRINT_DEBUG_TABLE_HEADER(NAME, DIMS)
     ELSE IF (N_DIMS == 3 ) THEN
       WRITE (*, "(A10,8X,A2, A7,A3, A7,A3,A7, A2)") &
               & NAME, "| ", &
-              & DIMS(1), " | ", DIMS(2), " | ",  DIMS(3), " |"
-    ENDIF
-  ELSE
+              & DIMS(1), " | ", DIMS(2), " | ",  DIMS(3), " |"    
+    ELSE IF (N_DIMS == 4 ) THEN
+    WRITE (*, "(A10,8X,A2, A7,A3, A7,A3,A7,A3,A7, A2)") &
+            & NAME, "| ", &
+            & DIMS(1), " | ", DIMS(2), " | ",  DIMS(3),  " | ",  DIMS(4), " |"
+  ENDIF
+  ELSE IF (LEN(NAME) > 1) THEN
     WRITE (*, "(A10,8X,A2)")  NAME, "| "
   ENDIF
 END SUBROUTINE PRINT_DEBUG_TABLE_HEADER
@@ -51,32 +55,32 @@ END SUBROUTINE PRINT_DEBUG_TABLE_HEADER
       CLASS IS (FIELD_1RB)
         CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
            IF (N_DIMS == 2 ) THEN
-          WRITE (*,"(A1, I3, A1, 1X, A9, 3X, &
-              &      A2,I7, A11)") &
+          WRITE (*,"(A1, I3, A1, 1X,A11, &
+              &      A3,I7, A13)") &
               &     "[",JFLD, "]", "FIELD_1RB",&
-              &     "| ", IUBOUNDS(1)-ILBOUNDS(1) + 1, ' |  (1)  | '
+              &     " | ", IUBOUNDS(1)-ILBOUNDS(1) + 1, ' |     (1) | '
         ENDIF
       CLASS IS (FIELD_2RB)
         CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
         IF (N_DIMS == 3 ) THEN
-          WRITE (*,"(A1, I3, A1, 1X, A9, 3X,&
-                 &  A2, I7, A11, I7 ,A2)") &
+          WRITE (*,"(A1, I3, A1, 1X, A11,&
+                 &  A3, I7, A13, I7 ,A2)") &
                  & "[",JFLD, "]", "FIELD_2RB",  &
-                 &  "| ", IUBOUNDS(1)-ILBOUNDS(1) + 1, ' |  (1)  | ', IUBOUNDS(2)-ILBOUNDS(2) + 1," |"
+                 &  " | ", IUBOUNDS(1)-ILBOUNDS(1) + 1, ' |     (1) | ', IUBOUNDS(2)-ILBOUNDS(2) + 1," |"
         ELSE IF (N_DIMS == 2 ) THEN
-          WRITE (*,"(A1, I3, A1, 1X,  A9, 3X, &
-                  &  A2, I7,A3,I7,A2)") &
+          WRITE (*,"(A1, I3, A1, 1X,  A11, &
+                  &  A3, I7,A3,I7,A2)") &
                   & "[",JFLD, "]", "FIELD_2RB",& 
-                  & "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1," |"
+                  & " | ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1," |"
           
         ENDIF
       CLASS IS (FIELD_3RB)
         CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
 
-        WRITE (*,"(A1, I3, A1, 1X,  A9, 3X, &
-                &  A2, I7,A3,I5,A3,I7,A2)") &
+        WRITE (*,"(A1, I3, A1, 1X,  A11, &
+                &  A3, I7,A3,I7,A3,I7,A2)") &
                & "[",JFLD, "]", "FIELD_3RB",& 
-              & "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1," | ",IUBOUNDS(3)-ILBOUNDS(3) + 1, " |"
+              &  "| ",IUBOUNDS(1)-ILBOUNDS(1) + 1, " | ",IUBOUNDS(2)-ILBOUNDS(2) + 1," | ",IUBOUNDS(3)-ILBOUNDS(3) + 1, " |"
 
       CLASS DEFAULT
         STOP 1
@@ -89,7 +93,7 @@ SUBROUTINE PRINT_DEBUG_1D(A1, NAME, DIMS)
 REAL(KIND=JPRB),INTENT(IN) :: A1(:)
 CHARACTER(LEN=*), INTENT(IN) :: NAME
 CHARACTER(LEN=*), OPTIONAL, INTENT(IN) :: DIMS(:)
-CALL PRINT_DEBUG_TABLE_HEADER("", DIMS)
+CALL PRINT_DEBUG_TABLE_HEADER("",DIMS)
 
 END SUBROUTINE PRINT_DEBUG_1D
 
@@ -97,8 +101,8 @@ SUBROUTINE PRINT_DEBUG_2D(A2, NAME, DIMS)
 REAL(KIND=JPRB),INTENT(IN) :: A2(:,:)
 CHARACTER(LEN=*), INTENT(IN) :: NAME
 CHARACTER(LEN=*), OPTIONAL,INTENT(IN) :: DIMS(:)
-CALL PRINT_DEBUG_TABLE_HEADER("", DIMS)
-WRITE(*,'(A10,8X,A2,I7,A3,I7,A3, I7, A2)') NAME, "| ", &
+CALL PRINT_DEBUG_TABLE_HEADER("",DIMS)
+WRITE(*,'(A10,8X,A2,I7,A3,I7,A2)') NAME, "| ", &
 & UBOUND(A2,1) - LBOUND(A2,1) + 1, " | " , &
 & UBOUND(A2,2) - LBOUND(A2,2) + 1, " |"
 END SUBROUTINE PRINT_DEBUG_2D
@@ -108,8 +112,8 @@ REAL(KIND=JPRB),INTENT(IN) :: A3(:,:,:)
 CHARACTER(LEN=*), INTENT(IN) :: NAME
 CHARACTER(LEN=*), OPTIONAL, INTENT(IN) :: DIMS(:)
 
-CALL PRINT_DEBUG_TABLE_HEADER("", DIMS)
-WRITE(*,'(A10,8X,A2,I7,A3,I7, A3, I7, A2)') NAME, "| ", &
+CALL PRINT_DEBUG_TABLE_HEADER("",DIMS)
+WRITE(*,'(A10,8X,A2,I7,A3,I7,A3,I7,A2)') NAME, "| ", &
 & UBOUND(A3,1) - LBOUND(A3,1) + 1, " | " , &
 & UBOUND(A3,2) - LBOUND(A3,2) + 1, " | ", &
 & UBOUND(A3,3) - LBOUND(A3,3) + 1, " |"
@@ -119,8 +123,9 @@ SUBROUTINE PRINT_DEBUG_4D(A4, NAME, DIMS)
 REAL(KIND=JPRB),INTENT(IN) :: A4(:,:,:,:)
 CHARACTER(LEN=*), INTENT(IN) :: NAME
 CHARACTER(LEN=*), OPTIONAL, INTENT(IN) :: DIMS(:)
-CALL PRINT_DEBUG_TABLE_HEADER("", DIMS)
-WRITE(*,'(A10,8X,A2,I7,A3,I7, A3, I7, A3, I7, A2)') NAME, "| ", &
+
+CALL PRINT_DEBUG_TABLE_HEADER("",DIMS)
+WRITE(*,'(A10,8X,A2,I7,A3,I7, A3,I7,A3,I7,A2)') NAME, "| ", &
 & UBOUND(A4,1) - LBOUND(A4,1) + 1, " | ", &
 & UBOUND(A4,2) - LBOUND(A4,2) + 1, " | ", &
 & UBOUND(A4,3) - LBOUND(A4,3) + 1, " | ", &
@@ -158,8 +163,8 @@ END SUBROUTINE PRINT_DEBUG_SEPARATOR
 
 SUBROUTINE PRINT_DEBUG_SUM(N)
 INTEGER, INTENT(IN) :: N
-WRITE(*,'(29X,A7)') "======="
-WRITE(*,'(29X,I4)')  N
+WRITE(*,'(29X,A9)') "========="
+WRITE(*,'(32X,I4)')  N
 
 END SUBROUTINE PRINT_DEBUG_SUM
 
@@ -218,11 +223,11 @@ CALL PRINT_DEBUG_FOOTER()
 
 CALL PRINT_DEBUG_HEADER("Input spectral vector fields:", SIZE(SPVORS))
 
-DIMSPL    = (/"NSPECS ", "NLEVS  "/)
+DIMSPL = (/"NSPECS ", "NLEVS  "/)
 DIMSPF = (/"NSPECS ", "NFIELDS"/)
-DIMGP2      = (/"NPROMA ", "NGPBLKS"/)
-DIMGP3      = (/"NPROMA ", "NLEVS  ", "NGPBLKS"/)
-DIMGP4      = (/"NPROMA ", "NLEVS  ", "NFIELDS", "NGPBLKS"  /)
+DIMGP2 = (/"NPROMA ", "NGPBLKS"/)
+DIMGP3 = (/"NPROMA ", "NLEVS  ", "NGPBLKS"/)
+DIMGP4 = (/"NPROMA ", "NLEVS  ", "NFIELDS", "NGPBLKS"  /)
 
 IF (PRESENT(SPVORS)) THEN
 CALL PRINT_DEBUG_FIELDS(SPVORS, "SPVORS",DIMSPL )
