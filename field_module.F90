@@ -208,19 +208,20 @@ MODULE FIELD_MODULE
     TYPE (FIELD_2RB_VIEW), ALLOCATABLE :: LG4RB (:)
     
     REAL(KIND=JPRB), POINTER :: ZZ4 (:,:,:,:)
-    INTEGER(KIND=JPIM) :: I2, J
+    INTEGER(KIND=JPIM) :: I2, I3, J
     
     ZZ4 => YLF%P
     
-
-    ALLOCATE (LG4RB (SIZE (ZZ4, 3)))
+    ALLOCATE (LG4RB (SIZE (ZZ4, 2) * SIZE (ZZ4, 3)))
     
-    !J = 1
+    J = 1
     
-    !DO I2 = LBOUND (ZZ3, 2), UBOUND (ZZ3, 2)
-     ! LG4RB (J)%V => ZZ3 (:, I2, :)
-!      J = J + 1
-    !ENDDO
+    DO I3 = LBOUND (ZZ4, 3), UBOUND (ZZ4, 3)
+      DO I2 = LBOUND (ZZ4, 2), UBOUND (ZZ4, 2)
+        LG4RB (J)%V => ZZ4(:, I2, I3, :)
+        J = J + 1
+      ENDDO
+    ENDDO
 
     END FUNCTION
     
@@ -251,7 +252,7 @@ MODULE FIELD_MODULE
           IF (JPASS == 2) LG (IOFF+1:IOFF+ILEN) = LG3RB (YLF, LDACC)
         CLASS IS (FIELD_4RB)
           CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
-          ILEN = (IUBOUNDS (2) - ILBOUNDS (2) + 1)
+          ILEN = (IUBOUNDS (2) - ILBOUNDS (2) + 1) * (IUBOUNDS (3) - ILBOUNDS (3) + 1)
           IF (JPASS == 2) LG (IOFF+1:IOFF+ILEN) = LG4RB (YLF, LDACC)
         CLASS DEFAULT
           STOP 1
@@ -341,21 +342,23 @@ MODULE FIELD_MODULE
     
     TYPE (FIELD_1RB_VIEW), ALLOCATABLE :: LS4RB (:)
     
-    REAL(KIND=JPRB), POINTER :: ZZ3 (:,:,:,:)
-    INTEGER(KIND=JPIM) :: I2, I3, J
+    REAL(KIND=JPRB), POINTER :: ZZ4 (:,:,:,:)
+    INTEGER(KIND=JPIM) :: I2, I3, I4,  J
     
-    ZZ3 => YLF%P
+    ZZ4 => YLF%P
     
-    !ALLOCATE (LS4RB (SIZE (ZZ3, 2) * SIZE (ZZ3, 3)))
+    ALLOCATE (LS4RB (SIZE (ZZ4, 2) * SIZE (ZZ4, 3) * SIZE (ZZ4, 4)))
     
-    !J = 1
+    J = 1
     
-    !DO I3 = LBOUND (ZZ3, 3), UBOUND (ZZ3, 3)
-      !DO I2 = LBOUND (ZZ3, 2), UBOUND (ZZ3, 2)
-        !LS3RB (J)%V => ZZ3 (:, I2, I3)
-        !J = J + 1
-      !ENDDO
-    !ENDDO
+    DO I4 = LBOUND (ZZ4, 4), UBOUND (ZZ4, 4)
+      DO I3 = LBOUND (ZZ4, 3), UBOUND (ZZ4, 3)
+        DO I2 = LBOUND (ZZ4, 2), UBOUND (ZZ4, 2)
+          LS4RB (J)%V => ZZ4 (:, I2, I3, I4)
+          J = J + 1
+        ENDDO
+      ENDDO
+    ENDDO
     
     END FUNCTION
   

@@ -150,7 +150,7 @@ CALL INV_TRANS_FIELD_API (SPVORS=[B(YLSPVOR), B(YLSPVOR1), B(YLSPVOR2)], SPDIVS=
                         & SCALARS=[B(YLT), B(YLQ), B(YLT1), B(YLQ1), B(YLT2), B(YLQ2)], & 
                         & VSETUVS=[NBSETLEV, NBSETSP], &
                         & VSETS=[NBSETLEV, NBSETLEV, NBSETSP, NBSETSP], &
-			                  & LDACC=LLACC, FSPGL_PROC=FSPGL_PROC)  !  FSPGL_PROC not PRESENT, because it is NULL associated
+			                  & LDACC=LLACC, FSPGL_PROC=FSPGL_PROC, LDVERBOSE = .TRUE.)  !  FSPGL_PROC not PRESENT, because it is NULL associated
 
 
 ! Build list
