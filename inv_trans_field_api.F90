@@ -345,9 +345,8 @@ INTEGER(KIND=JPIM),OPTIONAL     :: VSETS(:)                     !Meta data scala
   LOGICAL, INTENT(IN)          :: LDDIVGP                                         ! indicating if grid-point divergence is req.
   LOGICAL , INTENT(IN)         :: LDUVDER                                         ! indicating if E-W derivatives of u and v are req.
 
-  WRITE(*,*) "-----------------------------------------------"
-  WRITE(*,*) "DIMENSIONS"
-  WRITE(*,*) "-----------------------------------------------"
+  CALL PRINT_DEBUG_HEADER("DIMENSIONS")
+  
   WRITE(*,'(A11,I4,A2)') "NPROMA   | ", NPROMA,  ' |'
   WRITE(*,'(A11,I4,A2)') "NBLKS    | ", IGPBLKS, ' |'
   WRITE(*,'(A11,I4,A2)') "NSPECS   | ", ISPEC2,  ' |'
@@ -355,92 +354,140 @@ INTEGER(KIND=JPIM),OPTIONAL     :: VSETS(:)                     !Meta data scala
   WRITE(*,'(A11,L4,A2)') "LDVORGP  | ", LDVORGP,  ' |'
   WRITE(*,'(A11,L4,A2)') "LDDIVGP  | ", LDDIVGP,  ' |'
   WRITE(*,'(A11,L4,A2)') "LDSCDERS | ", LDSCDERS,  ' |'
-  WRITE(*,*) "-----------------------------------------------"
+  CALL PRINT_DEBUG_FOOTER()
   
-  WRITE(*,*) ""
-  WRITE(*,*) "-----------------------------------------------"
-  WRITE(*,*) "#  Input spectral vector fields:", SIZE(SPVORS), "#"
-  WRITE(*,*) "-----------------------------------------------"
-  IF (PRESENT(SPVORS)) CALL PRINT_DEBUG_FIELDS(SPVORS, "SPVORS", (/"SPEC   ", "NLEV   "/))
-  WRITE(*,'(31X,A8)') "========"
-  WRITE(*,'(33X,I4)')  IFLDSUV
+  CALL PRINT_DEBUG_HEADER("Input spectral vector fields:", SIZE(SPVORS))
+  
+  IF (PRESENT(SPVORS)) THEN
+    CALL PRINT_DEBUG_FIELDS(SPVORS, "SPVORS", (/"NSPECS ", "NLEV   "/))
+    CALL PRINT_DEBUG_SUM(IFLDSUV)
+  ENDIF
 
-  IF (PRESENT(SPVORS)) CALL PRINT_DEBUG_FIELDS(SPDIVS, "SPDIVS", (/"NSPECS ", "NLEV   "/))
-  WRITE(*,'(31X,A8)') "========"
-  WRITE(*,'(33X,I4)')  IFLDSUV
-  WRITE(*,*) "....................................."
+  IF (PRESENT(SPVORS)) THEN 
+    CALL PRINT_DEBUG_FIELDS(SPDIVS, "SPDIVS", (/"NSPECS ", "NLEV   "/))
+    CALL PRINT_DEBUG_SUM(IFLDSUV)
+  ENDIF
+
+  CALL PRINT_DEBUG_SEPARATOR()
+  CALL PRINT_DEBUG_2D(ZSPVOR, "ZSPVOR", "| NSPECS | NFIELDS|")
+  CALL PRINT_DEBUG_2D(ZSPDIV, "ZSPDIV")
   
-  WRITE(*,'(8X,A17)') "| NSPECS | NFIELDS|"
-  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') "ZSPVOR", " | ", &
-        & UBOUND(ZSPVOR,1) - LBOUND(ZSPVOR,1) + 1, " | " , &
-        & UBOUND(ZSPVOR,2) - LBOUND(ZSPVOR,2) + 1, " |"
-  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') "ZSPDIV", " | ", &
-        & UBOUND(ZSPDIV,1) - LBOUND(ZSPDIV,1) + 1, " | " , &
-        & UBOUND(ZSPDIV,2) - LBOUND(ZSPDIV,2) + 1, " |"
-  WRITE(*,*) "-----------------------------------------------"
-  WRITE(*,*) ""
-  WRITE(*,*) "-----------------------------------------------"
-  WRITE(*,*) "#  Input spectral scalar fields:", SIZE(SPSCALARS), "#"
-  WRITE(*,*) "-----------------------------------------------"
+  CALL PRINT_DEBUG_HEADER("Input spectral scalar fields:", SIZE(SPSCALARS))
   
-  IF (PRESENT(SPSCALARS)) CALL PRINT_DEBUG_FIELDS(SPSCALARS,"SPSCALARS", (/"NSPECS ", "NLEV   "/))  
-  WRITE(*,'(31X,A8)') "========"
-  WRITE(*,'(33X,I4)')  IFLDS
+  IF (PRESENT(SPSCALARS)) THEN
+    CALL PRINT_DEBUG_FIELDS(SPSCALARS,"SPSCALARS", (/"NSPECS ", "NLEV   "/))  
+    CALL PRINT_DEBUG_SUM(IFLDS)
+  ENDIF
+    
+  CALL PRINT_DEBUG_SEPARATOR()
+  CALL PRINT_DEBUG_2D(ZSPSCALAR, "ZSPSCALAR", "| NSPECS | NFIELDS|")
+  CALL PRINT_DEBUG_FOOTER()
   
-  WRITE(*,*) "....................................."
-  WRITE(*,'(8X,A17)') "| NSPECS | NFIELDS|"
-  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') "ZSPSCALAR", " | ", &
-        & UBOUND(ZSPSCALAR,1) - LBOUND(ZSPSCALAR,1) + 1, " | " , &
-        & UBOUND(ZSPSCALAR,2) - LBOUND(ZSPSCALAR,2) + 1, " |"
- WRITE(*,*) "-----------------------------------------------"  
-  WRITE(*,*) ""
-  WRITE(*,*) "-----------------------------------------------"
-  WRITE(*,*) "#  Output grid-point vector fields:",  SIZE(US), "#"
-  WRITE(*,*) "-----------------------------------------------"
+  CALL PRINT_DEBUG_HEADER("Output grid-point vector fields:", SIZE(US))
   
-  IF (PRESENT(US)) CALL PRINT_DEBUG_FIELDS(US,"US", (/"NPROMA ","NLEV   ", "NBLKS  "/))
-  WRITE(*,'(31X,A8)') "========"
-  WRITE(*,'(33X,I4)')  IFLDGUV
+  IF (PRESENT(US)) THEN
+    CALL PRINT_DEBUG_FIELDS(US,"US", (/"NPROMA ","NLEV   ", "NBLKS  "/))
+    CALL PRINT_DEBUG_SUM(IFLDGUV)
+  ENDIF
+
+  IF (PRESENT(US))  THEN
+   CALL PRINT_DEBUG_FIELDS(US,"VS", (/"NPROMA ","NLEV   ", "NBLKS  "/))
+   CALL PRINT_DEBUG_SUM(IFLDGUV)
+  ENDIF
   
-  IF (PRESENT(US)) CALL PRINT_DEBUG_FIELDS(US,"VS", (/"NPROMA ","NLEV   ", "NBLKS  "/))
-  WRITE(*,'(31X,A8)') "========"
-  WRITE(*,'(33X,I4)')  IFLDGUV
   
   IF (PRESENT(VORS)) CALL PRINT_DEBUG_FIELDS(VORS,"VORS")
   IF (PRESENT(DIVS)) CALL PRINT_DEBUG_FIELDS(DIVS,"DIVS")
   IF (PRESENT(DUS)) CALL PRINT_DEBUG_FIELDS(DUS, "DUS")
   IF (PRESENT(DVS)) CALL PRINT_DEBUG_FIELDS(DVS, "DVS")
 
-  WRITE(*,*) "....................................."
-  WRITE(*,'(8X,A37)') "| NPROMA | NLEVS  | NFIELDS| NBLKS  |"
-  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A3, I6, A2)') "PGPUV", " | ", &
-        & UBOUND(ZGPUV,1) - LBOUND(ZGPUV,1) + 1, " | ", &
-        & UBOUND(ZGPUV,2) - LBOUND(ZGPUV,2) + 1, " | ", &
-        & UBOUND(ZGPUV,3) - LBOUND(ZGPUV,3) + 1, " | ", &
-        & UBOUND(ZGPUV,4) - LBOUND(ZGPUV,4) + 1, " |"
-  WRITE(*,*) "-----------------------------------------------"
+  CALL PRINT_DEBUG_SEPARATOR()
+  CALL PRINT_DEBUG_4D(ZGPUV, "ZGPUV", "| NPROMA | NLEVS  | NFIELDS| NBLKS  |")
+  CALL PRINT_DEBUG_FOOTER()
   
-  WRITE(*,*) ""
-  WRITE(*,*) "-----------------------------------------------"
-  WRITE(*,*) "#  Output grid-point scalar fields:",  SIZE(SCALARS), "#"
-  WRITE(*,*) "-----------------------------------------------"
-  
+  CALL PRINT_DEBUG_HEADER("Output grid-point scalar fields:", SIZE(SCALARS))
   IF (PRESENT(SCALARS)) CALL PRINT_DEBUG_FIELDS(SCALARS, "SCALARS", (/"NPROMA ", "NLEV   ", "NBLKS  "/))
   IF (PRESENT(DSCALARS)) CALL PRINT_DEBUG_FIELDS(DSCALARS, "DSCALARS")
   IF (PRESENT(DSCALARS_NS)) CALL PRINT_DEBUG_FIELDS(DSCALARS_NS,"DSCALARS_NS")
-  WRITE(*,'(31X,A8)') "========"
-  WRITE(*,'(33X,I4)')  IFLDG
-  WRITE(*,*) "....................................."
-  WRITE(*,'(8X,A28)') "| NPROMA | NLEVS  | NBLKS  |"
-  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') "PGP", " | ", &
-        & UBOUND(ZGP,1) - LBOUND(ZGP,1) + 1, " | " , &
-        & UBOUND(ZGP,2) - LBOUND(ZGP,2) + 1, " | ", &
-        & UBOUND(ZGP,3) - LBOUND(ZGP,3) + 1, " |"
-  WRITE(*,*) "---------------------------------------------------"
   
+  CALL PRINT_DEBUG_SUM(IFLDG)
 
+  CALL PRINT_DEBUG_SEPARATOR()
+  CALL PRINT_DEBUG_3D(ZGP,  "ZGP", "| NPROMA | NLEVS  | NBLKS  |")
+  CALL PRINT_DEBUG_FOOTER()
   
 
 END SUBROUTINE PRINT_DEBUG
 
+SUBROUTINE PRINT_DEBUG_1D(A1, NAME, HEADER)
+  REAL(KIND=JPRB),INTENT(IN) :: A1(:)
+  CHARACTER(LEN=*), INTENT(IN) :: NAME
+  CHARACTER(LEN=*), OPTIONAL, INTENT(IN) :: HEADER
+
+END SUBROUTINE PRINT_DEBUG_1D
+
+SUBROUTINE PRINT_DEBUG_2D(A2, NAME, HEADER)
+  REAL(KIND=JPRB),INTENT(IN) :: A2(:,:)
+  CHARACTER(LEN=*), INTENT(IN) :: NAME
+  CHARACTER(LEN=*), OPTIONAL,INTENT(IN) :: HEADER
+  IF (PRESENT(HEADER))  WRITE(*,'(8X,A)') HEADER
+  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') NAME, " | ", &
+        & UBOUND(A2,1) - LBOUND(A2,1) + 1, " | " , &
+        & UBOUND(A2,2) - LBOUND(A2,2) + 1, " |"
+END SUBROUTINE PRINT_DEBUG_2D
+
+SUBROUTINE PRINT_DEBUG_3D(A3, NAME, HEADER)
+    REAL(KIND=JPRB),INTENT(IN) :: A3(:,:,:)
+    CHARACTER(LEN=*), INTENT(IN) :: NAME
+  CHARACTER(LEN=*), OPTIONAL, INTENT(IN) :: HEADER
+  IF (PRESENT(HEADER))WRITE(*,'(8X,A)') HEADER
+  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A2)') NAME, " | ", &
+        & UBOUND(A3,1) - LBOUND(A3,1) + 1, " | " , &
+        & UBOUND(A3,2) - LBOUND(A3,2) + 1, " | ", &
+        & UBOUND(A3,3) - LBOUND(A3,3) + 1, " |"
+END SUBROUTINE PRINT_DEBUG_3D
+
+SUBROUTINE PRINT_DEBUG_4D(A4, NAME, HEADER)
+  REAL(KIND=JPRB),INTENT(IN) :: A4(:,:,:,:)
+  CHARACTER(LEN=*), INTENT(IN) :: NAME
+  CHARACTER(LEN=*), OPTIONAL, INTENT(IN) :: HEADER
+  IF (PRESENT(HEADER))WRITE(*,'(8X,A)') HEADER
+  WRITE(*,'(A7,A3,I6,A3,I6, A3, I6, A3, I6, A2)') NAME, " | ", &
+        & UBOUND(A4,1) - LBOUND(A4,1) + 1, " | ", &
+        & UBOUND(A4,2) - LBOUND(A4,2) + 1, " | ", &
+        & UBOUND(A4,3) - LBOUND(A4,3) + 1, " | ", &
+        & UBOUND(A4,4) - LBOUND(A4,4) + 1, " |"
+  
+END SUBROUTINE PRINT_DEBUG_4D
+
+SUBROUTINE PRINT_DEBUG_HEADER(DESCRIPTION, NUMBER)
+  CHARACTER(LEN=*), INTENT(IN) :: DESCRIPTION
+  INTEGER, INTENT(IN), OPTIONAL :: NUMBER
+
+    WRITE(*,*) "-----------------------------------------------"
+    IF (PRESENT(NUMBER)) THEN
+      WRITE(*,*) "#", DESCRIPTION, NUMBER, "#"
+    ELSE
+      WRITE(*,*) "#", DESCRIPTION, "#"
+    ENDIF
+    WRITE(*,*) "-----------------------------------------------"
+    
+END SUBROUTINE PRINT_DEBUG_HEADER
+
+SUBROUTINE PRINT_DEBUG_FOOTER()
+  WRITE(*,*) "-----------------------------------------------"
+  WRITE(*,*) ""
+END SUBROUTINE PRINT_DEBUG_FOOTER
+
+SUBROUTINE PRINT_DEBUG_SEPARATOR()
+  WRITE(*,*) "............."
+  WRITE(*,*) ""
+END SUBROUTINE PRINT_DEBUG_SEPARATOR
+
+SUBROUTINE PRINT_DEBUG_SUM(N)
+  INTEGER, INTENT(IN) :: N
+  WRITE(*,'(31X,A8)') "========"
+  WRITE(*,'(33X,I4)')  N
+
+END SUBROUTINE PRINT_DEBUG_SUM
 END MODULE INV_TRANS_FIELD_API_MODULE
